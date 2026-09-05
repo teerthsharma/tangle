@@ -25,12 +25,13 @@
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/teerthsharma/tangle/main/assets/tangle.gif" width="420" alt="tangle: a rendered cable pile, its traced cables, its numbered crossings, and a REFUSED banner naming crossing 1">
+  <img src="https://raw.githubusercontent.com/teerthsharma/tangle/main/assets/hero.png" alt="Left: a rendered scene traced and CERTIFIED LINKED, lk = 1. Right: a real photograph of booster cables, its skeleton branching in 29 places, REFUSED with reason BRANCHED_SKELETON.">
 </p>
 
-<p align="center"><i>Four frames, one pile: bare scene → traced cables → numbered crossings → the
-verdict stamped on the picture. This one is a <b>refusal</b>. Every frame carries the diagram
-digest, so the GIF cannot be faked frame by frame.</i></p>
+<p align="center"><i>Left, the certificate. Right, a real photograph of booster cables from
+Wikimedia Commons, cut out of its background by the tool's own segmentation — and refused,
+because a cable that crosses itself has no linking number to report. That is today's honest
+state: <b>247 real photographs, 0 certified, 0 wrong certificates.</b></i></p>
 
 ```bash
 pip install tanglekit     # or:  uv add tanglekit
@@ -95,11 +96,22 @@ flowchart LR
   E --> F["✅ LINKED<br/>🟡 NOT CERTIFIED<br/>🛑 REFUSED"]
 ```
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/teerthsharma/tangle/main/assets/tangle.gif" width="380" alt="Four frames of one rendered pile: bare scene, traced cables, numbered crossings, then a REFUSED banner naming crossing 1.">
+</p>
+
+<p align="center"><i>The same four stages on one pile. Every frame carries the diagram digest in
+its footer, so the GIF cannot be faked frame by frame.</i></p>
+
 1. 🎨 **Segment.** Threshold at the *widest representable gap* in the cable-ness histogram. No gap in the photograph means no threshold and no verdict — it refuses instead of picking a number.
 2. 🦴 **Skeletonise.** Mask → centrelines → a 4-valent planar graph. Every node is a crossing, numbered reproducibly, so two machines number them identically.
 3. 👁️ **Read over/under.** *Occlusion* continuity, and nothing else: the under-strand's own mask is interrupted where the other cable crosses it, so the cable whose trace had to be bridged across a gap is the one underneath. For opaque cables the silhouette of the union carries no depth at all, which kills every geometric cue. Where neither cable was interrupted there is no evidence, and the crossing is **UNKNOWN** — never a low-confidence "over".
 4. ➕ **Sign the crossings.** A crossing's sign factors into an in-plane part read from the two tangents (which needs no depth at all) times `±1` for who is on top.
 5. 🔒 **Certify.** Half the signed sum is the **Gauss linking number**: an exact integer, a topological invariant. Over every unreadable crossing at once the achievable set is an *interval*. Interval excludes zero → **LINKED, proved**.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/teerthsharma/tangle/main/assets/mechanism.png" alt="Two rows on one number line: four read crossings plus two unreadable ones give the interval [0, 2], which contains 0 and is REFUSED; six read crossings give the single point 2, which clears 0 and is CERTIFIED LINKED.">
+</p>
 
 ---
 
@@ -218,6 +230,10 @@ histogram among certified verdicts, and the arms that were not run are all in th
 
 ### Photograph to verdict, on the rendered corpus
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/teerthsharma/tangle/main/assets/coin-vs-occlusion.png" alt="The same scene twice. Read from occlusion continuity it is CERTIFIED LINKED, unplug one, 0 wrong certificates. With the over/under reader replaced by a coin flip it is CERTIFIED SEPARABLE, just pull, which is wrong: 32 wrong certificates over the same 2,000 diagrams.">
+</p>
+
 **100% over/under on every accepted crossing** across four nuisance arms, and **45 certified,
 0 wrong, 34 refused** out of 80 rendered piles. Same extracted diagrams with the over/under
 reader swapped for a coin flip: **32 wrong certificates against 0**. The corpus is not too easy
@@ -285,6 +301,11 @@ Collected once, here.
 - **Noise is a cliff, not a slope.** σ = 16/255 traces 10/10 piles; σ = 26/255 traces 0/10. The failure direction is always a refusal, never a wrong certificate, and 20 piles at each of 7 noise levels produce 0 certificates the scene contradicts.
 - **Two of four nuisance arms fail the 40% refuse gate.** blur 3.0 px refuses 85%; antialiased refuses 55%.
 - **It has now been run on real images, and it certified none of them.** 247 free-licensed images this repository did not make — 99 knot photographs and 72 cabling photographs from Wikimedia Commons, 27 published link diagrams, 49 line drawings from `tr33hugg3r/knot-crossings` — produce **0 certified verdicts, 0 wrong certificates, and 0 diagrams built at all**. Every one is stopped by a precondition: 104 `BRANCHED_SKELETON`, 65 `NO_INTENSITY_GAP`, 61 `NOT_TWO_COMPONENTS`, 17 `OPEN_TRACE`. The same harness certifies 13 of 20 `synth` piles through the same PNG round trip, so the zero is the corpus and not the harness → [RESULTS.md §4](https://github.com/teerthsharma/tangle/blob/main/RESULTS.md#4-real-images-247-pictures-this-repository-did-not-make).
+
+  <p align="center">
+    <img src="https://raw.githubusercontent.com/teerthsharma/tangle/main/assets/refusal-wall.png" alt="A contact sheet of all 247 real images, every tile bordered in the refusal colour, over a bar showing 104 BRANCHED_SKELETON, 65 NO_INTENSITY_GAP, 61 NOT_TWO_COMPONENTS and 17 OPEN_TRACE, and a control strip of 20 rendered piles of which 13 certify.">
+  </p>
+
 - **Every other number here comes from `tangle.synth`**: matte constant-colour cables, no contact shadow, no specular highlight, no JPEG, no lens. Coverage, the 133 of 133 crossings read the right way round, the 32 wrong certificates the coin flip buys, `TAU`, `BRIDGE_K`, the blur and antialiasing arms, closed-cable tracing, and every asset — all of it synthetic. The invariant layer is the one exception, and it is checked against closed forms rather than pictures.
 - **No camera model, so no viewpoint-agreement measurement.** Invariance is tested as *diagram-move* invariance (R1/R2/R3), which is strictly weaker than camera invariance. The two-view interval intersection exists and is unwired.
 - **The corpus cannot exhibit `|lk| ≥ 2`.** An arch weaving across an arch cannot wrap twice; `|lk| ≥ 2` lives only in the `T(2,n)` family, which never goes through a camera.

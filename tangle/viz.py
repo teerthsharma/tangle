@@ -69,6 +69,43 @@ CABLE_RGB = (
     (176, 140, 30),
 )
 
+#: Palettes.  The overlay is a product surface, and most people read GitHub on a dark
+#: page, so the same renderer draws either ground.  A theme carries no logic: every
+#: verdict, glyph and gap is decided before a colour is chosen, and swapping the dict
+#: cannot change what is drawn, only what it is drawn in.
+LIGHT = {
+    "paper": PAPER,
+    "ink": INK,
+    "chip": PAPER,
+    "chip_ink": INK,
+    "footer": FOOTER_RGB,
+    "footer_ink": (90, 90, 92),
+    "unknown": UNKNOWN_RGB,
+    "target": TARGET_RGB,
+    "cable": CABLE_RGB,
+    "banner": BANNER_RGB,
+    "banner_ink": (255, 255, 255),
+    "banner_sub": (238, 238, 238),
+}
+
+#: Dark ground, checked against GitHub's own #0d1117 page.  Meaning per colour, used
+#: identically in every asset: green certified, red refused or re-shoot this crossing,
+#: amber a crossing with no evidence, blue and violet the two cables.
+DARK = {
+    "paper": (11, 15, 23),
+    "ink": (230, 237, 243),
+    "chip": (20, 26, 36),
+    "chip_ink": (230, 237, 243),
+    "footer": (16, 21, 30),
+    "footer_ink": (139, 152, 169),
+    "unknown": (210, 153, 34),
+    "target": (248, 81, 73),
+    "cable": ((88, 166, 255), (188, 140, 255), (63, 185, 80), (210, 153, 34), (248, 81, 73)),
+    "banner": {CERTIFIED: (18, 74, 45), NOT_CERTIFIED: (85, 63, 16), REFUSED: (108, 27, 24)},
+    "banner_ink": (255, 255, 255),
+    "banner_sub": (223, 228, 234),
+}
+
 GAP_PX = 7.0  # the under-strand break, in output pixels
 BANNER_H = 88
 FOOTER_H = 26
@@ -260,12 +297,13 @@ def pieces(
 # --------------------------------------------------------------------------------------
 
 
-def _label(dr: ImageDraw.ImageDraw, xy: tuple[float, float], text: str, f) -> None:
-    """A crossing number on a paper chip, so it stays legible over a photograph."""
+def _label(dr: ImageDraw.ImageDraw, xy: tuple[float, float], text: str, f, th=None) -> None:
+    """A crossing number on a chip, so it stays legible over a photograph."""
+    th = th or LIGHT
     x, y = xy
     x0, y0, x1, y1 = dr.textbbox((x, y), text, font=f, anchor="ls")
-    dr.rectangle((x0 - 2, y0 - 1, x1 + 2, y1 + 1), fill=PAPER)
-    dr.text((x, y), text, font=f, fill=INK, anchor="ls")
+    dr.rectangle((x0 - 2, y0 - 1, x1 + 2, y1 + 1), fill=th["chip"])
+    dr.text((x, y), text, font=f, fill=th["chip_ink"], anchor="ls")
 
 
 def _dashed_rect(dr: ImageDraw.ImageDraw, box, colour, dash: int = 3, width: int = 2) -> None:
@@ -288,18 +326,21 @@ def render(
     pair: tuple[int, int] = (0, 1),
     bearing: float | None = None,
     cable_width: int = 5,
+    theme: dict | None = None,
 ) -> Image.Image:
     """One overlay frame.
 
     `image` is the photograph the diagram was traced from, in which case the diagram's
     coordinates are already its pixels; with no image the diagram is drawn on paper.
     `stages` selects how much is drawn, which is how the GIF builds up.
+    `theme` is `LIGHT` (default) or `DARK`; it changes colours and nothing else.
     """
+    th = theme or LIGHT
     stages = tuple(stages)
     if image is not None:
         photo = image.convert("RGB")
         w, h = photo.size
-        canvas = Image.new("RGB", (w, h + BANNER_H + FOOTER_H), PAPER)
+        canvas = Image.new("RGB", (w, h + BANNER_H + FOOTER_H), th["paper"])
         canvas.paste(photo, (0, BANNER_H))
         box = (0, BANNER_H, w, h)
         frame = (0.0, 0.0, float(w), float(h))
@@ -307,7 +348,7 @@ def render(
         to_px = to_px_raw
     else:
         w, h = size
-        canvas = Image.new("RGB", (w, h + BANNER_H + FOOTER_H), PAPER)
+        canvas = Image.new("RGB", (w, h + BANNER_H + FOOTER_H), th["paper"])
         pad = 34
         box = (pad, BANNER_H + pad, w - 2 * pad, h - 2 * pad)
         to_px, scale = _fit(d.frame, box)
@@ -319,7 +360,7 @@ def render(
     # -- cables, with the under-strand broken at every READ crossing --------------------
     if "cables" in stages:
         for cab in d.cables:
-            colour = CABLE_RGB[cab.id % len(CABLE_RGB)]
+            colour = th["cable"][cab.id % len(th["cable"])]
             cuts = breaks(d, cab.id, gap_diag) if "crossings" in stages else []
             for piece in pieces(cab.points, cab.closed, cuts):
                 dr.line([to_px(p) for p in piece], fill=colour, width=cable_width, joint="curve")
@@ -332,16 +373,16 @@ def render(
             x, y = to_px(c.xy)
             state = states[c.id]
             if state == READ:
-                dr.rectangle((x - r, y - r, x + r, y + r), fill=INK)
+                dr.rectangle((x - r, y - r, x + r, y + r), fill=th["ink"])
             else:
                 ru = r + 3
-                _dashed_rect(dr, (x - ru, y - ru, x + ru, y + ru), UNKNOWN_RGB, dash=4)
+                _dashed_rect(dr, (x - ru, y - ru, x + ru, y + ru), th["unknown"], dash=4)
                 # the `?` sits outside the box, not on the node: dead centre is where the
                 # two strands cross, and both of them stay continuous at an unknown
                 # crossing, so anything drawn there is illegible by construction.
-                dr.text((x - ru - 4, y), "?", font=font(16), fill=UNKNOWN_RGB, anchor="rm")
+                dr.text((x - ru - 4, y), "?", font=font(16), fill=th["unknown"], anchor="rm")
             if state == TARGET:
-                dr.ellipse((x - r - 11, y - r - 11, x + r + 11, y + r + 11), outline=TARGET_RGB, width=3)
+                dr.ellipse((x - r - 11, y - r - 11, x + r + 11, y + r + 11), outline=th["target"], width=3)
                 b = bearing
                 if b is None:
                     try:
@@ -352,17 +393,17 @@ def render(
                 if b is not None:
                     a = math.radians(b)
                     dx, dy = math.cos(a) * 34, math.sin(a) * 34
-                    dr.line([(x + dx * 0.5, y + dy * 0.5), (x + dx, y + dy)], fill=TARGET_RGB, width=3)
-                    dr.regular_polygon((x + dx, y + dy, 6), 3, rotation=90 - b, fill=TARGET_RGB)
-            _label(dr, (x + r + 6, y - r - 4), str(c.id), f)
+                    dr.line([(x + dx * 0.5, y + dy * 0.5), (x + dx, y + dy)], fill=th["target"], width=3)
+                    dr.regular_polygon((x + dx, y + dy, 6), 3, rotation=90 - b, fill=th["target"])
+            _label(dr, (x + r + 6, y - r - 4), str(c.id), f, th)
 
     # -- banner and footer ---------------------------------------------------------------
     if "banner" in stages:
         status = verdict.status if verdict is not None else NOT_CERTIFIED
-        ground = BANNER_RGB.get(status, INK)
+        ground = th["banner"].get(status, th["ink"])
         dr.rectangle((0, 0, canvas.width, BANNER_H - 1), fill=ground)
         head, num, action = banner_text(verdict)
-        dr.text((22, 22), head, font=font(30), fill=(255, 255, 255), anchor="ls")
+        dr.text((22, 22), head, font=font(30), fill=th["banner_ink"], anchor="ls")
         nfont = font(40)
         room = canvas.width - 44 - (dr.textlength(num, font=nfont) + 22 if num else 0)
         if action:
@@ -372,11 +413,11 @@ def render(
                 while action and dr.textlength(action + " ...", font=afont) > room:
                     action = action[: action.rfind(" ")] if " " in action else action[:-2]
                 action += " ..."
-            dr.text((22, 62), action, font=afont, fill=(238, 238, 238), anchor="ls")
+            dr.text((22, 62), action, font=afont, fill=th["banner_sub"], anchor="ls")
         if num:
-            dr.text((canvas.width - 22, 46), num, font=nfont, fill=(255, 255, 255), anchor="rm")
+            dr.text((canvas.width - 22, 46), num, font=nfont, fill=th["banner_ink"], anchor="rm")
 
-    dr.rectangle((0, canvas.height - FOOTER_H, canvas.width, canvas.height), fill=FOOTER_RGB)
+    dr.rectangle((0, canvas.height - FOOTER_H, canvas.width, canvas.height), fill=th["footer"])
     foot, ffont = footer_text(d, verdict), font(12)
     # Narrow pages (a 512 px render) cannot hold the whole line; drop trailing fields, never
     # the digest, rather than letting the text run off the edge.
@@ -386,7 +427,7 @@ def render(
         (12, canvas.height - FOOTER_H // 2),
         foot,
         font=ffont,
-        fill=(90, 90, 92),
+        fill=th["footer_ink"],
         anchor="lm",
     )
     return canvas
