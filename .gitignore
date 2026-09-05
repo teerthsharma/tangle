@@ -8,3 +8,4 @@ __pycache__/
 .donotcomit/
 results.json
 build/
+dist/

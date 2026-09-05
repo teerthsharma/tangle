@@ -1,14 +1,17 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tangle"
+# Distribution name only. The import name and the console script stay `tangle`;
+# `tangle` on PyPI is held by an abandoned 2017 package (one release, features: "TODO").
+name = "tangle-topology"
 version = "0.1.0"
 description = "Photograph two cables and get an integer with a proof, or a refusal that names the crossing to re-shoot."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "Teerth Sharma", email = "teerths57@gmail.com" }]
 keywords = [
     "knot-theory",
@@ -17,6 +20,16 @@ keywords = [
     "certificate",
     "abstention",
     "active-perception",
+]
+# Measured on CPython 3.11.9 only. requires-python is the support claim;
+# no per-minor classifier is listed for a version that was never run.
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Image Recognition",
 ]
 dependencies = [
     "numpy>=1.24",
@@ -27,6 +40,12 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest>=7.4"]
+
+[project.urls]
+Homepage = "https://github.com/teerthsharma/tangle"
+Repository = "https://github.com/teerthsharma/tangle"
+Issues = "https://github.com/teerthsharma/tangle/issues"
+Results = "https://github.com/teerthsharma/tangle/blob/main/RESULTS.md"
 
 [project.scripts]
 tangle = "tangle.cli:main"
