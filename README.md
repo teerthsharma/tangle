@@ -4,23 +4,23 @@
 
 <p align="center">
   Knot theory doing a chore. <code>|lk| &gt;= 1</code> is a mathematical certificate that
-  the two cables <b>cannot be pulled apart</b> — go unplug one.<br>
-  When the photograph can't read a crossing, <code>tangle</code> doesn't guess. It refuses,
-  and names the crossing to re-shoot.
+  the two cables <b>cannot be pulled apart</b> — go unplug one. When the photograph can't
+  read a crossing, <code>tangle</code> doesn't guess. It refuses, and names the crossing to
+  re-shoot.<br>
+  Today the pictures are rendered, not photographed — <a href="#️-limits">the scope is stated
+  up front</a>, and the pipeline that consumes them is the same one.
 </p>
 
 <p align="center">
-  Invented by <b>Teerth Sharma</b> ·
-  <a href="mailto:teerths57@gmail.com">teerths57@gmail.com</a> ·
-  <a href="https://github.com/teerthsharma/tangle">github.com/teerthsharma/tangle</a>
+  Invented by <b>Teerth Sharma</b> · <a href="mailto:teerths57@gmail.com">teerths57@gmail.com</a> · <a href="https://github.com/teerthsharma/tangle">github.com/teerthsharma/tangle</a>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/tests-196%20passed-2ea043?style=flat-square" alt="196 tests passed">
+  <a href="RESULTS.md"><img src="https://img.shields.io/badge/tests-196%20passed-2ea043?style=flat-square" alt="196 tests passed"></a>
   <img src="https://img.shields.io/badge/CPU--only-no%20GPU%2C%20no%20cloud-0b7285?style=flat-square" alt="CPU only">
   <img src="https://img.shields.io/badge/training-zero-8b5cf6?style=flat-square" alt="zero training">
-  <img src="https://img.shields.io/badge/stack-numpy%20%C2%B7%20scipy%20%C2%B7%20scikit--image%20%C2%B7%20pillow-013243?style=flat-square" alt="numpy scipy scikit-image pillow">
-  <img src="https://img.shields.io/badge/certificate-one--directional-b45309?style=flat-square" alt="one-directional certificate">
+  <a href="pyproject.toml"><img src="https://img.shields.io/badge/stack-numpy%20%C2%B7%20scipy%20%C2%B7%20scikit--image%20%C2%B7%20pillow-013243?style=flat-square" alt="numpy scipy scikit-image pillow"></a>
+  <a href="#-what-it-certifies-and-what-it-refuses"><img src="https://img.shields.io/badge/certificate-one--directional-b45309?style=flat-square" alt="one-directional certificate"></a>
   <img src="https://img.shields.io/badge/on%20an%20unknown%20crossing-refuses%20to%20guess-9b2a2a?style=flat-square" alt="refuses to guess">
 </p>
 
@@ -28,29 +28,39 @@
   <img src="assets/tangle.gif" width="420" alt="tangle: a rendered cable pile, its traced cables, its numbered crossings, and a REFUSED banner naming crossing 1">
 </p>
 
-<p align="center"><i>Four frames, one pile: bare scene → traced cables → numbered crossings →
-the verdict stamped on the picture. This one is a <b>refusal</b> — the achievable interval is
-<code>[0, 1]</code>, it contains 0, so nothing is certified and crossing 1 is ringed with a camera
-bearing. Every frame carries the diagram digest, so the GIF cannot be faked frame by frame.</i></p>
+<p align="center"><i>Four frames, one pile: bare scene → traced cables → numbered crossings → the
+verdict stamped on the picture. This one is a <b>refusal</b>. Every frame carries the diagram
+digest, so the GIF cannot be faked frame by frame.</i></p>
 
 ```bash
-pip install git+https://github.com/teerthsharma/tangle
+pip install tangle-knot     # or:  uv add tangle-knot
+tangle --synthetic --seed 2 --overlay verdict.png
 ```
 
-```bash
-python -m tangle --synthetic --seed 2 --overlay verdict.png
-```
+> ### 📈 `+10.3` points of certified coverage, at **0 wrong certificates**
+>
+> Over 2,000 diagrams, against the four-line *"refuse on any unknown crossing"* baseline —
+> which also scores zero errors. **23.6%** certified against **13.2%**. That gap is the entire
+> argument for the interval theorem, and it is the only row that could have come out badly.
+> → [RESULTS.md §1](RESULTS.md#1-the-headline-coverage-at-zero-wrong-certificates)
 
 ```
 ==============================================================================
   CERTIFIED  LINKED                                                   lk = 1
 ==============================================================================
-  witness     lk
   interval    [1, 1]   S = 2
   advice      lk = 1 over all 2^0 resolutions. The cables cannot be separated
               while their ends stay put. Unplug one.
-  source      from_braid([1, 1, 1, -1, 1, -1], strands=2)
   digest      dbf326cac84c8ff361d8e56a2e018c07c6f09333
+==============================================================================
+```
+
+<details>
+<summary>the rest of the verdict block, including the convention it is invariant under</summary>
+
+```
+  witness     lk
+  source      from_braid([1, 1, 1, -1, 1, -1], strands=2)
 ------------------------------------------------------------------------------
   convention  The scene is a ball. Each cable is an arc properly embedded in
               it, with its two ends fixed where the cable leaves the picture.
@@ -62,17 +72,12 @@ python -m tangle --synthetic --seed 2 --overlay verdict.png
 overlay -> verdict.png
 ```
 
-> ### 📈 `+10.3` points of certified coverage, at **0 wrong certificates**
->
-> Over 2,000 diagrams, against the four-line *"refuse on any unknown crossing"* baseline —
-> which also scores zero errors. **23.6%** certified against **13.2%**. That gap is the entire
-> argument for the interval theorem, and it is the only row that could have come out badly.
-> → [RESULTS.md §1](RESULTS.md)
+</details>
 
 **Zero-shot. No training. No neural network. No dataset. No GPU.** Just `numpy`, `scipy`,
 `scikit-image`, `pillow` and a theorem from 1833. Runs on-device and offline on a laptop CPU —
-the certified layer turns out 2,000 verdicts in **about 0.3 s** (0.29-0.31 s over three
-runs), real-time by any camera's standard.
+the certified layer turns out 2,000 verdicts in **about 0.3 s** (0.29-0.31 s over three runs).
+The imaging layer is not timed yet.
 
 ---
 
@@ -80,14 +85,11 @@ runs), real-time by any camera's standard.
 
 ```mermaid
 flowchart LR
-  A["📷 photo"] --> B["mask<br/>widest intensity gap"]
-  B --> C["skeleton<br/>4-valent plane graph"]
-  C --> D["crossings<br/>over / under / UNKNOWN"]
-  D --> E["signs<br/>base(c) · x_c"]
-  E --> F["O(k) interval<br/>over 2^k resolutions"]
-  F --> G["✅ LINKED"]
-  F --> H["🟡 NOT CERTIFIED"]
-  F --> I["🛑 REFUSED<br/>look at crossing N"]
+  A["📷 photo"] --> B["mask<br/>widest gap"]
+  B --> C["skeleton<br/>4-valent graph"]
+  C --> D["crossings<br/>over / under / ?"]
+  D --> E["O(k) interval<br/>over 2^k lifts"]
+  E --> F["✅ LINKED<br/>🟡 NOT CERTIFIED<br/>🛑 REFUSED"]
 ```
 
 1. 🎨 **Segment.** Threshold at the *widest representable gap* in the cable-ness histogram. No gap in the photograph means no threshold and no verdict — it refuses instead of picking a number.
@@ -98,15 +100,15 @@ flowchart LR
 
 ---
 
-## 🧮 The math in 60 seconds
+## 🧮 The math, in one screen
 
 **The invariant.** Sum the signs of the crossings *between* the two cables, and halve it:
 
-$$
+```math
 \mathrm{lk}(A,B)\;=\;\frac{1}{2}\sum_{c\,\in\,C(A,B)}\varepsilon(c),
 \qquad
-\varepsilon(c)\;=\;\underbrace{\operatorname{sgn}\det\big[\,t_a\;\;t_b\,\big]}_{\mathrm{base}(c)\,:\ \text{in-plane, no depth}}\;\cdot\;\underbrace{x_c}_{\pm 1,\ +1\ \text{iff}\ A\ \text{is over}}
-$$
+\varepsilon(c)\;=\;\underbrace{\mathop{\mathrm{sgn}}\det\big[\,t_a\;\;t_b\,\big]}_{\mathrm{base}(c)\,:\ \text{in-plane, no depth}}\;\cdot\;\underbrace{x_c}_{\pm 1,\ +1\ \text{iff}\ A\ \text{is over}}
+```
 
 That integer is an **isotopy invariant**: bend the cables, drape them, re-route them, walk round
 and shoot from the other side — as long as the four ends stay pinned where they leave the
@@ -118,11 +120,11 @@ photograph could not read. With `S` the signed sum over the readable inter-compo
 and `k` unreadable ones, the set of linking numbers achievable over all `2^k` resolutions is
 *exactly* `k+1` consecutive integers:
 
-$$
+```math
 \Big\{\,\mathrm{lk}\,\Big\}_{2^k}\;=\;\Big\{\ \tfrac{S-k}{2}+j\ :\ j=0,1,\dots,k\ \Big\},
 \qquad
 \mathrm{lk}_{\min}=\tfrac{S-k}{2},\qquad \mathrm{lk}_{\max}=\tfrac{S+k}{2}
-$$
+```
 
 Computed in **`O(k)`. No enumeration. No sampling. No posterior.** Certification is
 `lk_min > 0` or `lk_max < 0`, and since the interval is contiguous with step 1 those three
@@ -141,7 +143,13 @@ against explicit `2^k` enumeration: **`0/1000` patterns disagree**, over 192,540
 
 ## ✅🟡🛑 What it certifies, and what it refuses
 
-**The certificate is one-directional.** This is the part that is usually got wrong.
+<p align="center">
+  <img src="assets/clasp-linked.png" width="32%" alt="CERTIFIED LINKED, lk = 1">
+  <img src="assets/stack-separable.png" width="32%" alt="CERTIFIED SEPARABLE by the over-everywhere witness">
+  <img src="assets/pile-refuse.png" width="32%" alt="REFUSED, interval [0,1], look at crossing 1">
+</p>
+
+**The certificate is one-directional.** This is the part everyone gets backwards.
 
 | verdict | when | what it means | exit |
 |---|---|---|---|
@@ -149,6 +157,7 @@ against explicit `2^k` enumeration: **`0/1000` patterns disagree**, over 192,540
 | ✅ **CERTIFIED SEPARABLE** | one cable is the over-strand at **every** inter-component crossing | **Proved**, by a different and independently sufficient witness. *Just pull.* | `0` |
 | 🟡 **NOT CERTIFIED** | `lk = 0`, or both cables are over somewhere | The computation succeeded and **proves nothing** | `1` |
 | 🛑 **REFUSED** | the interval straddles zero, or the trace is defective | The computation **declined**, with a cause and a next action | `2` |
+| ⚫ **BAD INPUT** | the file cannot be read, or the flags do not parse | Not a verdict — the tool never ran | `3` |
 
 🔴 **`lk = 0` is never "unlinked".** The Whitehead link has `lk = 0` and does not come apart. The
 word *unlinked* is a banned substring inside this package, enforced by a test that greps the
@@ -176,16 +185,14 @@ every *odd*-cardinality tracer error, for free, with probability 1.
 
 ## 📊 Benchmarks
 
-Everything below is generated by the command shown, at commit `ac84ca0` — the last commit
-that changed code — on machine
-`WIN-16QAL06O9GB`, Windows 11, python 3.11.9, numpy 2.4.6 / scipy 1.17.1 / scikit-image 0.26.0 /
-pillow 12.3.0. No number in this repository is hand-typed. Full tables, every control, and every
-arm that lost: **[RESULTS.md](RESULTS.md)**.
+Every block below is pasted from the command above it, at commit `ac84ca0` — the last commit
+that changed code — on one machine. No number in this repository is hand-typed.
+**[Full tables, every control, and every arm that lost](RESULTS.md)**.
 
 ### The headline — coverage at zero wrong certificates
 
 ```
-.venv/Scripts/python bench.py
+python bench.py
 
 ==============================================================================
   certified pairs, at 0 wrong certified verdicts
@@ -195,29 +202,6 @@ arm that lost: **[RESULTS.md](RESULTS.md)**.
     abstain on any unknown crossing        13.2%   0 wrong (<=1.1% of certified at 95%)
     ------------------------------------------------
     coverage gained by the interval theorem  10.3   points
-
-  same diagrams, decision rule replaced:
-    coin flip on unknowns                  70.3%   755 wrong
-==============================================================================
-    tangle CERTIFIED                       23.6%
-    tangle NOT CERTIFIED                    6.2%
-    tangle REFUSED                         70.2%
-==============================================================================
-  active perception -- the ranking is a perception heuristic, and theory
-  predicts no gap: every unknown shrinks the interval width by exactly 1.
-    named crossing re-shot, then certified 19.9%   of 1404
-    random crossing re-shot, same budget   20.0%   control
-==============================================================================
-  k among certified verdicts -- if this is 0 almost everywhere, then
-  "certified over all 2^k resolutions" is doing less work than it sounds.
-    k=0: 276  k=1: 147  k=2: 49
-==============================================================================
-  the REFUSED rate above is a function of the blur schedule -- up to
-  k = 4 of 6 crossings erased on purpose -- and is NOT a photograph's
-  refuse rate.  That number needs the tracer and is not measured here.
-------------------------------------------------------------------------------
-  not run here: the R2-drape alternation control and the mask-overlap
-  control need rendered scenes; every real-photograph table needs the tracer.
 ==============================================================================
   commit ac84ca0   machine WIN-16QAL06O9GB   python 3.11.9   0.29 s
 ==============================================================================
@@ -225,52 +209,27 @@ arm that lost: **[RESULTS.md](RESULTS.md)**.
 
 Ground truth is **not** the package's own arithmetic. Every entry is a closed braid word, and
 `lk` is half the signed exponent sum over the inter-component letters — known in closed form
-before any code runs.
+before any code runs. The verdict split, the active-perception control that lost, the `k`
+histogram among certified verdicts, and the arms that were not run are all in the same block →
+[RESULTS.md §1](RESULTS.md#1-the-headline-coverage-at-zero-wrong-certificates).
 
 ### Photograph to verdict, on the rendered corpus
 
-```
-.venv/Scripts/python -m pytest -q -s tests/test_vision.py
-
-  over/under on accepted crossings
-    clean           46/ 46  100.0%
-    blur 1.0 px     48/ 48  100.0%
-    blur 3.0 px      8/  8  100.0%
-    antialiased     31/ 31  100.0%
-
-  certified / wrong / refused, out of 20 piles per arm
-    clean           16     0     4   (80.0% certified)
-    blur 1.0 px     18     0     2   (90.0% certified)
-    blur 3.0 px      3     0    17   (15.0% certified)
-    antialiased      8     0    11   (40.0% certified)
-    rule of three: 0 wrong in 45 certified is an upper bound of 0.067, not a rate of 0
-    unknown crossings among certified verdicts: {0: 45}
-
-  coin flip on the identical diagrams, seed 20260905
-    clean          read  16 certified / 0 wrong    coin  19 certified / 11 wrong
-    blur 1.0 px    read  18 certified / 0 wrong    coin  18 certified / 12 wrong
-    blur 3.0 px    read   3 certified / 0 wrong    coin   2 certified / 1 wrong
-    antialiased    read   8 certified / 0 wrong    coin  12 certified / 8 wrong
-
-  refusal reasons over every arm
-    NOT_TWO_COMPONENTS    15
-    BRANCHED_SKELETON      7
-    OPEN_TRACE             4
-```
-
-Same extracted diagrams, over/under reader swapped for a coin flip: **32 wrong certificates
-against 0**. The corpus is not too easy — a guesser fails loudly on it.
+**100% over/under on every accepted crossing** across four nuisance arms, and **45 certified,
+0 wrong, 34 refused** out of 80 rendered piles. Same extracted diagrams with the over/under
+reader swapped for a coin flip: **32 wrong certificates against 0**. The corpus is not too easy
+— a guesser fails loudly on it.
+→ [RESULTS.md §3](RESULTS.md#3-photograph-to-verdict-the-rendered-corpus)
 
 ### Reproduce all of it
 
 ```bash
-python -m venv .venv
-.venv/Scripts/pip install numpy scipy scikit-image pillow pytest
-.venv/Scripts/pip install -e .
-.venv/Scripts/python -m pytest -q          # 196 passed
-.venv/Scripts/python -m pytest -q -s       # the same run, with the tables above printed
-.venv/Scripts/python bench.py              # the coverage table
-.venv/Scripts/python -m tangle --synthetic --seed 1
+python -m venv .venv && . .venv/*/activate   # .venv\Scripts\activate on Windows
+pip install -e ".[test]"
+pytest -q                # 196 passed
+pytest -q -s             # the same run, with the tables above printed
+python bench.py          # the coverage table
+python -m tangle --synthetic --seed 1
 ```
 
 ---
@@ -279,19 +238,24 @@ python -m venv .venv
 
 Nothing in the certified layer is new. Saying so first is what makes the rest believable.
 
-| work | what it is | what `tangle` adds | where they are better |
-|---|---|---|---|
-| **Matsuno et al. 2006** — *Manipulation of deformable linear objects using knot invariants* ([TMECH](https://doi.org/10.1109/tmech.2006.878557)) | image sensor → topological rope model → two knot invariants → classify the rope's state. Twenty years old, paywalled, no public code | the explicit UNKNOWN state, certification over the achievable interval, refusal with a named crossing, the pinned-ends statement, an open implementation | **the pipeline is theirs.** photo → model → invariant → verdict was published in 2006. The paper is unread here, so if either of their invariants is the linking number the novelty scopes down to orbit + pinning + refusal |
-| **KnotDLO** ([arXiv:2506.22176](https://arxiv.org/abs/2506.22176)) | robot knot tying from a crossing-sequence topological state; 50% success on overhand from unseen configurations | an invariant, a hard certificate, and a calibrated abstention | **it acts.** KnotDLO ties knots on real hardware; `tangle` only reports |
-| **Knots-10** ([arXiv:2603.23286](https://arxiv.org/abs/2603.23286)) | end-to-end CNN/ViT knot classification on rope photographs; no formal invariants; 58–69 pp accuracy collapse across rope materials | an invariant that is material-, colour- and viewpoint-independent **by construction** | **real photographs, at scale, on a task `tangle` cannot do.** `tangle` must not claim to beat their cross-material collapse until it has been run on their images |
-| **pyknotid / Spherogram / SnapPy** ([repo](https://github.com/3-manifolds/Spherogram)) | Goeritz matrices, determinants, linking numbers, Alexander and Jones polynomials from PD or Gauss codes | the image half — which is where 100% of the risk lives | **nothing mathematically. Every invariant here is theirs**, computed better and more generally. They are the third-party control this repo should be checked against |
+| work | what they have that this does not | what `tangle` adds |
+|---|---|---|
+| **Matsuno et al. 2006** ([TMECH](https://doi.org/10.1109/tmech.2006.878557)) | the pipeline itself: photo → topological rope model → knot invariant → verdict, published in 2006 | an explicit UNKNOWN state, certification over the achievable interval, refusal that names a crossing, open code |
+| **KnotDLO** ([arXiv:2506.22176](https://arxiv.org/abs/2506.22176)) | it acts — ties knots on real hardware, 50% on overhand from unseen configurations | an invariant, a hard certificate, and a calibrated abstention |
+| **Knots-10** ([arXiv:2603.23286](https://arxiv.org/abs/2603.23286)) | real rope photographs at scale, and a 58–69 pp accuracy collapse from studio images to phone photos | an invariant that is material-, colour- and viewpoint-independent **by construction** |
+| **pyknotid / Spherogram / SnapPy** ([repo](https://github.com/3-manifolds/Spherogram)) | every invariant here, computed better and more generally — the third-party control this repo owes them | the image half, which is where 100% of the risk lives |
+
+Two honesty notes on that table. Matsuno's paper is paywalled and unread here, so if either of
+their invariants is the linking number the novelty scopes down to orbit + pinning + refusal.
+And `tangle` must not claim to beat the Knots-10 studio-to-phone collapse until it has been run
+on their images.
 
 Also standing on: **Gauss 1833** (the linking integral and the half-sum), **Goeritz 1933** and
 **Gordon–Litherland 1978** (`det(L) = |Δ(−1)|`), **Habegger–Lin 1990** (string links),
-**HANDLOOM / LTODO** (whose learned cable tracer is better than this one), and
-**Lui & Saxena 2013**, who did the ambiguity orbit as a particle-filter posterior. The one real
-difference from them is *exactness and one-sidedness*: a hard certificate plus an abstention,
-instead of a posterior plus a threshold.
+**HANDLOOM** ([arXiv:2303.08975](https://arxiv.org/abs/2303.08975), whose learned cable tracer
+is better than this one), and **Lui & Saxena 2013**, who did the ambiguity orbit as a
+particle-filter posterior. The one real difference from them is *exactness and one-sidedness*:
+a hard certificate plus an abstention, instead of a posterior plus a threshold.
 
 ---
 
@@ -320,7 +284,7 @@ Collected once, here.
 - **No real photographs yet.** Every number here comes from `tangle.synth`: matte constant-colour cables, no contact shadow, no specular highlight, no JPEG, no lens.
 - **No camera model, so no viewpoint-agreement measurement.** Invariance is tested as *diagram-move* invariance (R1/R2/R3), which is strictly weaker than camera invariance. The two-view interval intersection exists and is unwired.
 - **The corpus cannot exhibit `|lk| ≥ 2`.** An arch weaving across an arch cannot wrap twice; `|lk| ≥ 2` lives only in the `T(2,n)` family, which never goes through a camera.
-- **An even number of tracer errors is uncaught** and can produce a confidently wrong certified integer. Parity catches odd counts; nothing single-view catches pairs. This is the live false-certification path, stated here rather than discovered in a bench.
+- **An even number of tracer errors is uncaught** and can produce a confidently wrong certified integer. Parity catches odd counts; nothing single-view catches pairs. This is the live false-certification path, stated here rather than discovered in a bench → [RESULTS.md §6](RESULTS.md#6-claims-not-earned).
 - **The certificate answers a narrower question than you will ask.** "Cannot be separated with the ends held" is not "will be annoying to untangle". An `lk = 0` pile can still be a nightmare of friction.
 - **Never claimed, in any code path or string:** *unlinked* from `lk = 0`; *unknotted* from `det = 1`; a knot name from any determinant; chirality; a probability, confidence or percentage attached to a verdict; any climbing, rigging or safety verdict; anything at all about the cables outside the frame.
 
@@ -329,16 +293,17 @@ Collected once, here.
 ## 🗺️ Roadmap
 
 - 📱 **Phone.** The certified layer is integer arithmetic with no dependencies — WebAssembly, then a camera app that refuses out loud and tells you where to stand.
-- 📷 **Real photographs.** Knots-10, `tr33hugg3r/knot-crossings` and HANDLOOM's cable images are downloadable and need no camera. Refuse rate and refusal-reason histogram ship first, before any accuracy claim.
+- 📷 **Real photographs.** Knots-10 ([arXiv:2603.23286](https://arxiv.org/abs/2603.23286), 1,440 images / 10 classes) and HANDLOOM's annotated RGB-D cable traces are downloadable and need no camera. Refuse rate and refusal-reason histogram ship first, before any accuracy claim.
 - 🪢 **Per-cable H-contraction**, so self-crossings stop being a refusal and real piles come into scope.
 - 🎥 **Multi-view.** `certify.intersect` already intersects two views' intervals, and disjoint intervals *prove* one trace is wrong. It needs a camera model before it is worth wiring up.
-- 🔢 **The Alexander determinant at `t = −1`.** Implemented and checked against a closed-form ladder (`det(T(2,n)) = n`, figure-eight 5, Whitehead 8), but it is genuinely nonlinear in the unknowns: no interval bound of the `O(k)` kind exists, so it needs the `2^k` enumeration under a measured budget (`K_MAX = 16`, set from the 39 µs per lift at ten crossings in [RESULTS.md §2](RESULTS.md)).
+- 🔢 **The Alexander determinant at `t = −1`.** Implemented and checked against a closed-form ladder (`det(T(2,n)) = n`, figure-eight 5, Whitehead 8), but it is genuinely nonlinear in the unknowns: no interval bound of the `O(k)` kind exists, so it needs the `2^k` enumeration under a measured budget (`K_MAX = 16`, set from the 39 µs per lift at ten crossings in [RESULTS.md §2](RESULTS.md#2-the-invariant-layer-against-closed-forms)).
 
 ---
 
 <p align="center"><sub>
-MIT · python ≥ 3.10 · <a href="RESULTS.md">RESULTS.md</a> ·
+<a href="LICENSE">MIT</a> · python ≥ 3.10 · <a href="RESULTS.md">RESULTS.md</a> ·
 Invented by <b>Teerth Sharma</b> · teerths57@gmail.com ·
+<a href="https://github.com/teerthsharma/tangle">github.com/teerthsharma/tangle</a><br>
 <code>knot-theory · linking-number · topological-invariant · computer-vision · zero-shot ·
 certified · active-perception · explainable-ai</code>
 </sub></p>
