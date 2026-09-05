@@ -49,6 +49,41 @@ def test_synthetic_refuses_an_odd_word_length():
         cli.synthetic(1, letters=5)
 
 
+def test_synthetic_refuses_fewer_than_two_strands():
+    for strands in (0, 1, -3):
+        with pytest.raises(ValueError):
+            cli.synthetic(0, strands=strands)
+
+
+def test_synthetic_refuses_a_point_budget_it_would_hang_on():
+    with pytest.raises(ValueError):
+        cli.synthetic(0, letters=cli.MAX_WORD_POINTS, strands=2)
+
+
+# --------------------------------------------------------------------------------------
+# a stranger's CLI args never raise -- every bad --synthetic knob is EXIT_INPUT, not a
+# traceback.  These reproduce actual crashes found in this module: an odd --letters or a
+# --strands < 2 used to propagate uncaught past `main()`.
+# --------------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["--synthetic", "--letters", "5"],
+        ["--synthetic", "--strands", "1"],
+        ["--synthetic", "--strands", "0"],
+        ["--synthetic", "--strands", "-3"],
+        ["--synthetic", "--letters", "200000"],
+        ["--synthetic", "--letters", "1000", "--strands", "64"],
+    ],
+)
+def test_bad_synthetic_args_exit_input_not_crash(argv):
+    code, txt = run(argv)
+    assert code == cli.EXIT_INPUT
+    assert txt.strip()
+
+
 def test_blur_widens_the_interval_by_exactly_k():
     d, (i, j), _ = cli.synthetic(3)
     base = lk_interval(d, i, j)
@@ -129,6 +164,57 @@ def test_block_without_a_diagram_prints_no_digest():
     v = Verdict(status=REFUSED, reason="NO_INTENSITY_GAP", advice="x", exit_code=2)
     txt = cli.block(v, None, ascii_only=True)
     assert "digest" not in txt and "NO_INTENSITY_GAP" in txt
+
+
+@pytest.mark.parametrize(
+    "make",
+    [
+        lambda p: p.write_bytes(b""),  # zero-length file
+        lambda p: p.write_bytes(b"not an image" * 20),  # corrupt file, plausible extension
+    ],
+    ids=["zero_length", "corrupt"],
+)
+def test_a_malformed_image_file_is_an_input_refusal_not_a_crash(tmp_path, make):
+    if cli.vision_entry() is None:
+        pytest.skip("the imaging layer is not installed")
+    p = tmp_path / "bad.jpg"
+    make(p)
+    code, txt = run([str(p)])
+    assert code == cli.EXIT_INPUT
+    assert "cannot read" in txt
+
+
+def test_a_directory_as_the_image_path_is_an_input_refusal(tmp_path):
+    if cli.vision_entry() is None:
+        pytest.skip("the imaging layer is not installed")
+    code, txt = run([str(tmp_path)])
+    assert code == cli.EXIT_INPUT
+    assert "cannot read" in txt
+
+
+def test_a_decompression_bomb_is_refused_not_raised(tmp_path, monkeypatch):
+    """PIL's own bomb guard raises `DecompressionBombError`, which is not an `OSError` --
+    `load_image` must convert it, or a big-enough file crashes past every guard in main()."""
+    from PIL import Image
+
+    monkeypatch.setattr(Image, "MAX_IMAGE_PIXELS", 100 * 100)
+    p = tmp_path / "big.png"
+    Image.new("RGB", (500, 500), (1, 2, 3)).save(p)
+    with pytest.raises(OSError):
+        cli.load_image(str(p))
+    # and through the CLI it is a named input refusal, not a traceback
+    code, txt = run([str(p)])
+    assert code == cli.EXIT_INPUT
+    assert "cannot read" in txt
+
+
+def test_load_image_handles_unicode_and_spaces_in_the_path(tmp_path):
+    from PIL import Image
+
+    p = tmp_path / "näme with spaces éè 中文.png"
+    Image.new("RGB", (30, 30), (5, 5, 5)).save(p)
+    arr, img = cli.load_image(str(p))
+    assert arr.shape == (30, 30, 3)
 
 
 def test_load_image_transposes_then_downscales(tmp_path):

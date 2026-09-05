@@ -28,11 +28,16 @@ import textwrap
 from typing import Callable, Sequence
 
 from .certify import CERTIFIED, EXIT, REFUSED, Verdict, certify
-from .diagram import Diagram
+from .diagram import MAX_BRAID_POINTS, Diagram
 
 EXIT_INPUT = 3  # the fourth code from the spec; EXIT in certify.py owns the other three.
 
 WIDTH = 78
+
+# `Diagram.from_braid` enforces this same budget; checking it here too, before the up-to-200
+# draw loop in `synthetic()` even starts, turns it into a --letters/--strands-specific
+# message instead of a generic one raised mid-loop on the first draw.
+MAX_WORD_POINTS = MAX_BRAID_POINTS
 
 
 # --------------------------------------------------------------------------------------
@@ -52,6 +57,14 @@ def synthetic(
     """
     if letters < 2 or letters % 2:
         raise ValueError("an odd letter count on two strands closes to one component")
+    if strands < 2:
+        raise ValueError(f"--strands must be at least 2 to have an alphabet to draw from, got {strands}")
+    if letters * strands > MAX_WORD_POINTS:
+        raise ValueError(
+            f"--letters {letters} * --strands {strands} = {letters * strands} points exceeds "
+            f"the {MAX_WORD_POINTS}-point budget; this is a demo corpus, not a stress test -- "
+            "lower one or the other"
+        )
     rng = random.Random(seed)
     alphabet = [s * i for i in range(1, strands) for s in (1, -1)]
     for _ in range(200):
@@ -172,7 +185,13 @@ def load_image(path: str):
     import numpy as np
     from PIL import Image, ImageOps
 
-    img = ImageOps.exif_transpose(Image.open(path))
+    try:
+        img = ImageOps.exif_transpose(Image.open(path))
+    except Image.DecompressionBombError as e:
+        # Not an OSError, so it would otherwise slip past the (FileNotFoundError, OSError)
+        # guard in main() and print a raw traceback for the one input this guard exists to
+        # name: a file large enough that decoding it should refuse, not run away.
+        raise OSError(f"image is too large to open safely: {e}") from e
     if img.mode in ("RGBA", "LA", "PA") or (img.mode == "P" and "transparency" in img.info):
         img = Image.alpha_composite(Image.new("RGBA", img.size, (255, 255, 255, 255)), img.convert("RGBA"))
     img = img.convert("RGB")
@@ -225,7 +244,11 @@ def main(argv: Sequence[str] | None = None, out=None) -> int:
 
     image = None
     if args.synthetic:
-        d, auto, _word = synthetic(args.seed, letters=args.letters, strands=args.strands)
+        try:
+            d, auto, _word = synthetic(args.seed, letters=args.letters, strands=args.strands)
+        except (ValueError, RuntimeError) as e:
+            print(str(e), file=out)
+            return EXIT_INPUT
         pair = pair or auto
         if args.unknown:
             try:

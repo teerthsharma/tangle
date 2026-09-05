@@ -37,6 +37,14 @@ Point = tuple[float, float]
 # `x_c` -- it widens the interval (T4) and never refuses.
 SIN_MIN = 0.15
 
+# ponytail: a resource cap, not a mathematical one.  `from_braid` traces one polyline of
+# roughly `len(word)` points per strand and `from_polylines` then finds crossings in
+# O(total_points^2) segment comparisons; measured at 5,000 total points (500 letters, 10
+# strands) that is already ~4s, and at 64,000 (1000 letters, 64 strands) it does not return
+# in two minutes.  Every known caller -- the (2, n) torus family, the demo corpus -- stays
+# under a few dozen points, so this costs no legitimate use and turns a hang into a refusal.
+MAX_BRAID_POINTS = 4000
+
 
 # --------------------------------------------------------------------------------------
 # data model
@@ -235,6 +243,11 @@ class Diagram:
         cable, x, y) -- so it is a function of the geometry and not of detection order.
         """
         polys = [list(p) for p in polylines]
+        if not polys:
+            raise ValueError("from_polylines needs at least one polyline, got zero")
+        for idx, p in enumerate(polys):
+            if not p:
+                raise ValueError(f"polyline {idx} is empty; every cable needs at least one point")
         if closed is None:
             flags = [len(p) > 2 and math.dist(p[0], p[-1]) < 1e-12 for p in polys]
         elif isinstance(closed, bool):
@@ -311,6 +324,13 @@ class Diagram:
         n = strands if strands is not None else (max(abs(w) for w in word) + 1 if word else 2)
         if n < 1 or (word and n <= max(abs(w) for w in word)):
             raise ValueError(f"{n} strands cannot carry the word {word}")
+        if n * len(word) > MAX_BRAID_POINTS:
+            raise ValueError(
+                f"{n} strands x {len(word)} letters traces roughly {n * len(word)} points, "
+                f"over the {MAX_BRAID_POINTS}-point budget that keeps crossing-finding "
+                "(O(points^2) in from_polylines) from hanging; use fewer strands or a "
+                "shorter word"
+            )
         m = len(word)
         depth = max(m, 1)
 

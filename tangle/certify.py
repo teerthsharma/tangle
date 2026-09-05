@@ -381,6 +381,10 @@ def certify(d: Diagram, i: int = 0, j: int = 1, tau: float = TAU) -> Verdict:
     interval; then, only if lk did not certify, the over-everywhere witness.  Every
     REFUSED is terminal: no second witness runs on a refused diagram.
     """
+    for name, v in (("i", i), ("j", j)):
+        if not isinstance(v, int) or isinstance(v, bool):
+            raise TypeError(f"cable index {name} must be an int, got {type(v).__name__}: {v!r}")
+
     if i == j or not (0 <= i < len(d.cables)) or not (0 <= j < len(d.cables)):
         return _refuse(
             NOT_TWO_COMPONENTS,

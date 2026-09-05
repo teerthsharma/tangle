@@ -358,6 +358,17 @@ def test_a_bad_pair_index_refuses():
     assert certify(d, 0, 5).status == REFUSED
 
 
+def test_a_non_int_pair_index_raises_a_named_type_error_not_a_bare_comparison_failure():
+    """`certify(d, 'a', 'b')` used to reach `0 <= i < len(...)` and raise the numeric
+    comparison's own `TypeError: '<=' not supported between instances of 'int' and 'str'`
+    three frames in.  A caller's mistake in the *type* of the pair is not the diagram's
+    problem, so it is raised at the door with the value named, not returned as a Verdict."""
+    d = Diagram.from_braid([1, 1])
+    for bad_pair in (("a", "b"), (0, "b"), (None, 1), (0.5, 1), (True, 0)):
+        with pytest.raises(TypeError):
+            certify(d, *bad_pair)
+
+
 # --------------------------------------------------------------------------------------
 # tau lives inside the certified layer
 # --------------------------------------------------------------------------------------

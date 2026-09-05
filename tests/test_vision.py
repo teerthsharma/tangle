@@ -181,6 +181,29 @@ def test_every_refusal_carries_a_named_reason():
     assert set(hist) <= known, set(hist) - known
 
 
+def test_bad_input_arrays_are_refused_not_crashed():
+    """A caller who skips `cli.load_image` -- wrong type, wrong shape, empty, oversized, or
+    NaN-poisoned -- gets `TraceRefused(INVALID_INPUT)`, never a raw numpy/skimage error."""
+    import numpy as np
+
+    bad = {
+        "not_an_array": [[1, 2, 3], [4, 5, 6]],
+        "zero_height": np.zeros((0, 10, 3), dtype=np.uint8),
+        "zero_width": np.zeros((10, 0, 3), dtype=np.uint8),
+        "grayscale": np.zeros((20, 20), dtype=np.uint8),
+        "rgba": np.zeros((20, 20, 4), dtype=np.uint8),
+        "one_dimensional": np.zeros((300,), dtype=np.uint8),
+        "batch_of_images": np.zeros((2, 20, 20, 3), dtype=np.uint8),
+        "nan_pixels": np.full((20, 20, 3), np.nan, dtype=np.float32),
+        "inf_pixels": np.full((20, 20, 3), np.inf, dtype=np.float32),
+        "too_large": np.zeros((4097, 4097, 3), dtype=np.uint8),
+    }
+    for name, arr in bad.items():
+        with pytest.raises(vision.TraceRefused) as e:
+            vision.trace(arr)
+        assert e.value.reason == vision.INVALID_INPUT, name
+
+
 def test_unknown_is_never_a_low_confidence_over():
     """With the bridge evidence removed, every crossing abstains and the interval widens."""
     img, _ = synth.render(synth.clasp())

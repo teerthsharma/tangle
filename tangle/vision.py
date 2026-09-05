@@ -42,6 +42,8 @@ Refusals raised here, before any Diagram exists, and each one terminal:
     BRANCHED_SKELETON   a cable's own skeleton still branches after spur pruning
     OPEN_TRACE          the arcs of one cable do not chain into a single boundary-to-
                         boundary curve
+    INVALID_INPUT       not an (H, W, 3) array, empty, non-finite, or too large to trace
+                        without the risk of hanging the process
 
 Self-check:  python -m tangle.vision
 """
@@ -70,6 +72,7 @@ from .diagram import Diagram, Point, _boundary_distance
 NO_INTENSITY_GAP = "NO_INTENSITY_GAP"
 BRANCHED_SKELETON = "BRANCHED_SKELETON"
 OPEN_TRACE = "OPEN_TRACE"
+INVALID_INPUT = "INVALID_INPUT"
 
 
 class TraceRefused(Exception):
@@ -105,6 +108,41 @@ BRIDGE_K = 1.165
 BRIDGE_S = 0.85
 RDP_TOL = 0.75  # polyline simplification tolerance, px
 MIN_CYCLE_PX = 8  # a skeleton loop shorter than this is a cleanup artifact, not a cable
+
+# ponytail: a resource cap, not a measured one.  `cli.load_image` never hands this module
+# more than MAX_SIDE=1024 per side (~1M px); a caller of `trace()` directly can hand it
+# anything, and skeletonize/distance_transform_edt hold several float64 buffers the size of
+# the image, so an unbounded array risks the multi-GB, multi-minute case this exists to
+# refuse instead of run.  4096x4096 is 16x that budget -- generous for a direct caller,
+# nowhere near the machine.
+MAX_PIXELS = 4096 * 4096
+
+
+def _validate_image(rgb) -> np.ndarray:
+    """The one precondition every refusal and stage below assumes: a real RGB image.
+
+    Raised here, before `background()` touches it, so a caller who skips `cli.load_image`
+    (wrong dtype, wrong shape, a list, an empty array, a NaN-poisoned float image) gets the
+    same typed `TraceRefused` as every other precondition in this module, not a numpy
+    broadcasting error or an IndexError three frames down in `rgb2lab`.
+    """
+    if not isinstance(rgb, np.ndarray):
+        raise TraceRefused(INVALID_INPUT, f"expected a numpy array, got {type(rgb).__name__}")
+    if rgb.ndim != 3 or rgb.shape[2] != 3:
+        raise TraceRefused(
+            INVALID_INPUT, f"expected an (H, W, 3) RGB array, got shape {rgb.shape}"
+        )
+    if rgb.shape[0] == 0 or rgb.shape[1] == 0:
+        raise TraceRefused(INVALID_INPUT, f"the image has zero height or width: {rgb.shape}")
+    if rgb.shape[0] * rgb.shape[1] > MAX_PIXELS:
+        raise TraceRefused(
+            INVALID_INPUT,
+            f"{rgb.shape[1]}x{rgb.shape[0]} exceeds the {MAX_PIXELS}-pixel budget; "
+            "downsize before tracing (`cli.load_image` does this to 1024px on the long side)",
+        )
+    if np.issubdtype(rgb.dtype, np.floating) and not np.isfinite(rgb).all():
+        raise TraceRefused(INVALID_INPUT, "the image contains NaN or infinite values")
+    return rgb
 
 
 # --------------------------------------------------------------------------------------
@@ -596,6 +634,7 @@ def trace(rgb: np.ndarray, frame: tuple[float, float, float, float] | None = Non
     tests run against -- so crossing numbering, `base` and the crossing angle come from one
     implementation and this module only has to answer over/under.
     """
+    rgb = _validate_image(rgb)
     h, w = rgb.shape[:2]
     if frame is None:
         frame = (0.0, 0.0, float(w - 1), float(h - 1))

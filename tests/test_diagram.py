@@ -263,3 +263,47 @@ def test_from_braid_reads_over_under_from_the_word():
 def test_from_braid_rejects_a_zero_letter():
     with pytest.raises(ValueError):
         Diagram.from_braid([1, 0, 1])
+
+
+def test_from_braid_refuses_a_word_it_would_hang_tracing():
+    """The root-cause guard: `from_braid` itself, not only the CLI's `synthetic()` wrapper
+    around it, refuses before entering the O(points^2) crossing search."""
+    from tangle.diagram import MAX_BRAID_POINTS
+
+    with pytest.raises(ValueError, match="point budget"):
+        Diagram.from_braid([1] * (MAX_BRAID_POINTS + 1))
+
+
+# --------------------------------------------------------------------------------------
+# malformed input: every path a caller can take either builds a diagram or raises a typed,
+# actionable ValueError -- never the bare max()/IndexError that used to escape from here
+# --------------------------------------------------------------------------------------
+
+
+def test_from_polylines_rejects_an_empty_list():
+    with pytest.raises(ValueError, match="at least one polyline"):
+        Diagram.from_polylines([])
+
+
+def test_from_polylines_rejects_an_empty_polyline():
+    with pytest.raises(ValueError, match="polyline 0 is empty"):
+        Diagram.from_polylines([[]])
+    # the empty one is named even when it is not the first
+    with pytest.raises(ValueError, match="polyline 1 is empty"):
+        Diagram.from_polylines([[(0, 0), (1, 1)], []])
+
+
+def test_diagram_not_certified_fires_on_a_manually_flagged_defect():
+    """`defects` is set by no constructor in this package today, but it is a public field
+    on a public dataclass, and `validate()` promises a reason for it -- a caller (or a
+    future defect-detection stage) that sets it must get DIAGRAM_NOT_CERTIFIED, not a
+    silent pass-through."""
+    from dataclasses import replace as _replace
+
+    from tangle.certify import DIAGRAM_NOT_CERTIFIED
+
+    d = Diagram.from_braid([1, 1])
+    flagged = _replace(d, defects=("hand-set for this test",))
+    assert flagged.validate() == "DIAGRAM_NOT_CERTIFIED"
+    v = certify(flagged)
+    assert v.status == REFUSED and v.reason == DIAGRAM_NOT_CERTIFIED
