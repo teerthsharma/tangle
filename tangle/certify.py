@@ -74,8 +74,8 @@ VIEWS_DISAGREE = "VIEWS_DISAGREE"
 
 EXIT = {CERTIFIED: 0, NOT_CERTIFIED: 1, REFUSED: 2}
 
-# Never printed, in any field, by any code path.  Enforced in Verdict.__post_init__ and
-# by test_banned_words_unreachable.
+# Never printed, in any field, by any code path.  Enforced in Verdict.__post_init__, and
+# by test_no_verdict_carries_a_banned_phrase and test_the_package_source_carries_no_banned_phrase.
 BANNED = ("unlinked", "not linked", "unknotted", "safe to pull", "just pull them")
 
 

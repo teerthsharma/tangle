@@ -74,7 +74,7 @@ def abstain(d, i: int, j: int, truth: int):
     if d.unknown_between(i, j):
         return (False, False)
     exact = lk_interval(d, i, j).exact
-    return (exact != 0, exact != truth)
+    return (exact != 0, exact != 0 and exact != truth)
 
 
 def coin_flip(d, i: int, j: int, truth: int, rng: random.Random):
@@ -187,9 +187,14 @@ def _pct(x: int, n: int) -> str:
     return f"{100.0 * x / n:5.1f}%" if n else "    --"
 
 
-def _zero(x: int, n: int) -> str:
-    """Every zero carries its upper bound.  Rule of three: 95% upper bound is 3/N."""
-    return f"0 wrong (<={_pct(3, n).strip()} at 95%)" if x == 0 else f"{x} wrong"
+def _zero(x: int, certified: int) -> str:
+    """Every zero carries its upper bound.  Rule of three: 95% upper bound is 3/N.
+
+    N is the number of *certified* verdicts, not the number of entries: a wrong certificate
+    can only be produced where a certificate was issued, and dividing by the entries would
+    quote a bound four times tighter than the arm earned.
+    """
+    return f"0 wrong (<={_pct(3, certified).strip()} of certified at 95%)" if x == 0 else f"{x} wrong"
 
 
 def _row(label: str, value: str, note: str = "") -> str:
@@ -210,11 +215,11 @@ def table(res: dict, ascii_only: bool = False) -> str:
         f"  certified pairs, at {t.get('wrong', 0)} wrong certified verdicts",
         f"  {cfg['n']} braid seeds x k = 0..{cfg['kmax']} blurred crossings = {n} entries",
         heavy,
-        _row("tangle", _pct(cert, n), _zero(t.get("wrong", 0), n)),
+        _row("tangle", _pct(cert, n), _zero(t.get("wrong", 0), cert)),
         _row(
             "abstain on any unknown crossing",
             _pct(t.get("abstain_certified", 0), n),
-            _zero(t.get("abstain_wrong", 0), n),
+            _zero(t.get("abstain_wrong", 0), t.get("abstain_certified", 0)),
         ),
         "    " + light[:48],
         _row("coverage gained by the interval theorem", f"{gap:.1f}", "points"),
