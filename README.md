@@ -291,28 +291,23 @@ itself.
 
   over/under on accepted crossings
     clean           46/ 46  100.0%
-    blur 1.0 px     48/ 48  100.0%
-    blur 3.0 px      8/  8  100.0%
-    antialiased     31/ 31  100.0%
+    blur 1.0 px     47/ 47  100.0%
+    blur 3.0 px     44/ 44  100.0%
+    antialiased     45/ 45  100.0%
 
   certified / wrong / refused, out of 20 piles per arm
     clean           16     0     4   (80.0% certified)
-    blur 1.0 px     18     0     2   (90.0% certified)
-    blur 3.0 px      3     0    17   (15.0% certified)
-    antialiased      8     0    11   (40.0% certified)
-    rule of three: 0 wrong in 45 certified is an upper bound of 0.067, not a rate of 0
-    unknown crossings among certified verdicts: {0: 45}
+    blur 1.0 px     17     0     3   (85.0% certified)
+    blur 3.0 px     16     0     4   (80.0% certified)
+    antialiased     14     0     6   (70.0% certified)
+    rule of three: 0 wrong in 63 certified is an upper bound of 0.048, not a rate of 0
+    unknown crossings among certified verdicts: {0: 63}
 
   coin flip on the identical diagrams, seed 20260905
     clean          read  16 certified / 0 wrong    coin  19 certified / 11 wrong
-    blur 1.0 px    read  18 certified / 0 wrong    coin  18 certified / 12 wrong
-    blur 3.0 px    read   3 certified / 0 wrong    coin   2 certified / 1 wrong
-    antialiased    read   8 certified / 0 wrong    coin  12 certified / 8 wrong
-
-  refusal reasons over every arm
-    NOT_TWO_COMPONENTS    15
-    BRANCHED_SKELETON      7
-    OPEN_TRACE             4
+    blur 1.0 px    read  17 certified / 0 wrong    coin  18 certified / 12 wrong
+    blur 3.0 px    read  16 certified / 0 wrong    coin  17 certified / 13 wrong
+    antialiased    read  14 certified / 0 wrong    coin  19 certified / 11 wrong
 ```
 
 Same extracted diagrams, over/under reader swapped for a coin flip: **32 wrong certificates against
