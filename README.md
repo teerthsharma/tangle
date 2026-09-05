@@ -33,12 +33,12 @@ verdict stamped on the picture. This one is a <b>refusal</b>. Every frame carrie
 digest, so the GIF cannot be faked frame by frame.</i></p>
 
 ```bash
-pip install tangle-topology     # or:  uv add tangle-topology
+pip install tanglekit     # or:  uv add tanglekit
 tangle --synthetic --seed 2 --overlay verdict.png
 ```
 
-<sub>The distribution is <code>tangle-topology</code> — plain <code>tangle</code> on PyPI is an
-abandoned 2017 package. The import and the command stay <code>tangle</code>.</sub>
+<sub>The distribution is <code>tanglekit</code> — plain <code>tangle</code> on PyPI is taken by an
+unrelated package. The import and the command stay <code>tangle</code>.</sub>
 
 > ### 📈 `+10.3` points of certified coverage, at **0 wrong certificates**
 >

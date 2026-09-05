@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 # Distribution name only. The import name and the console script stay `tangle`;
 # `tangle` on PyPI is held by an abandoned 2017 package (one release, features: "TODO").
-name = "tangle-topology"
+name = "tanglekit"
 version = "0.1.0"
 description = "Photograph two cables and get an integer with a proof, or a refusal that names the crossing to re-shoot."
 readme = "README.md"
