@@ -21,7 +21,7 @@ Reproduce all of it:
 python -m venv .venv
 .venv/Scripts/pip install numpy scipy scikit-image pillow pytest
 .venv/Scripts/pip install -e .
-.venv/Scripts/python -m pytest -q          # 196 passed
+.venv/Scripts/python -m pytest -q          # 204 passed, 2 skipped
 .venv/Scripts/python -m pytest -q -s       # the same run, with the tables below printed
 .venv/Scripts/python bench.py              # the coverage table
 .venv/Scripts/python -m tangle --synthetic --seed 1

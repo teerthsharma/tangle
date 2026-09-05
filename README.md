@@ -16,16 +16,16 @@
 </p>
 
 <p align="center">
-  <a href="RESULTS.md"><img src="https://img.shields.io/badge/tests-196%20passed-2ea043?style=flat-square" alt="196 tests passed"></a>
+  <a href="https://github.com/teerthsharma/tangle/blob/main/RESULTS.md"><img src="https://img.shields.io/badge/tests-204%20passed-2ea043?style=flat-square" alt="204 tests passed"></a>
   <img src="https://img.shields.io/badge/CPU--only-no%20GPU%2C%20no%20cloud-0b7285?style=flat-square" alt="CPU only">
   <img src="https://img.shields.io/badge/training-zero-8b5cf6?style=flat-square" alt="zero training">
-  <a href="pyproject.toml"><img src="https://img.shields.io/badge/stack-numpy%20%C2%B7%20scipy%20%C2%B7%20scikit--image%20%C2%B7%20pillow-013243?style=flat-square" alt="numpy scipy scikit-image pillow"></a>
+  <a href="https://github.com/teerthsharma/tangle/blob/main/pyproject.toml"><img src="https://img.shields.io/badge/stack-numpy%20%C2%B7%20scipy%20%C2%B7%20scikit--image%20%C2%B7%20pillow-013243?style=flat-square" alt="numpy scipy scikit-image pillow"></a>
   <a href="#-what-it-certifies-and-what-it-refuses"><img src="https://img.shields.io/badge/certificate-one--directional-b45309?style=flat-square" alt="one-directional certificate"></a>
   <img src="https://img.shields.io/badge/on%20an%20unknown%20crossing-refuses%20to%20guess-9b2a2a?style=flat-square" alt="refuses to guess">
 </p>
 
 <p align="center">
-  <img src="assets/tangle.gif" width="420" alt="tangle: a rendered cable pile, its traced cables, its numbered crossings, and a REFUSED banner naming crossing 1">
+  <img src="https://raw.githubusercontent.com/teerthsharma/tangle/main/assets/tangle.gif" width="420" alt="tangle: a rendered cable pile, its traced cables, its numbered crossings, and a REFUSED banner naming crossing 1">
 </p>
 
 <p align="center"><i>Four frames, one pile: bare scene → traced cables → numbered crossings → the
@@ -33,16 +33,19 @@ verdict stamped on the picture. This one is a <b>refusal</b>. Every frame carrie
 digest, so the GIF cannot be faked frame by frame.</i></p>
 
 ```bash
-pip install tangle-knot     # or:  uv add tangle-knot
+pip install tangle-topology     # or:  uv add tangle-topology
 tangle --synthetic --seed 2 --overlay verdict.png
 ```
+
+<sub>The distribution is <code>tangle-topology</code> — plain <code>tangle</code> on PyPI is an
+abandoned 2017 package. The import and the command stay <code>tangle</code>.</sub>
 
 > ### 📈 `+10.3` points of certified coverage, at **0 wrong certificates**
 >
 > Over 2,000 diagrams, against the four-line *"refuse on any unknown crossing"* baseline —
 > which also scores zero errors. **23.6%** certified against **13.2%**. That gap is the entire
 > argument for the interval theorem, and it is the only row that could have come out badly.
-> → [RESULTS.md §1](RESULTS.md#1-the-headline-coverage-at-zero-wrong-certificates)
+> → [RESULTS.md §1](https://github.com/teerthsharma/tangle/blob/main/RESULTS.md#1-the-headline-coverage-at-zero-wrong-certificates)
 
 ```
 ==============================================================================
@@ -144,9 +147,9 @@ against explicit `2^k` enumeration: **`0/1000` patterns disagree**, over 192,540
 ## ✅🟡🛑 What it certifies, and what it refuses
 
 <p align="center">
-  <img src="assets/clasp-linked.png" width="32%" alt="CERTIFIED LINKED, lk = 1">
-  <img src="assets/stack-separable.png" width="32%" alt="CERTIFIED SEPARABLE by the over-everywhere witness">
-  <img src="assets/pile-refuse.png" width="32%" alt="REFUSED, interval [0,1], look at crossing 1">
+  <img src="https://raw.githubusercontent.com/teerthsharma/tangle/main/assets/clasp-linked.png" width="32%" alt="CERTIFIED LINKED, lk = 1">
+  <img src="https://raw.githubusercontent.com/teerthsharma/tangle/main/assets/stack-separable.png" width="32%" alt="CERTIFIED SEPARABLE by the over-everywhere witness">
+  <img src="https://raw.githubusercontent.com/teerthsharma/tangle/main/assets/pile-refuse.png" width="32%" alt="REFUSED, interval [0,1], look at crossing 1">
 </p>
 
 **The certificate is one-directional.** This is the part everyone gets backwards.
@@ -187,7 +190,7 @@ every *odd*-cardinality tracer error, for free, with probability 1.
 
 Every block below is pasted from the command above it, at commit `ac84ca0` — the last commit
 that changed code — on one machine. No number in this repository is hand-typed.
-**[Full tables, every control, and every arm that lost](RESULTS.md)**.
+**[Full tables, every control, and every arm that lost](https://github.com/teerthsharma/tangle/blob/main/RESULTS.md)**.
 
 ### The headline — coverage at zero wrong certificates
 
@@ -211,7 +214,7 @@ Ground truth is **not** the package's own arithmetic. Every entry is a closed br
 `lk` is half the signed exponent sum over the inter-component letters — known in closed form
 before any code runs. The verdict split, the active-perception control that lost, the `k`
 histogram among certified verdicts, and the arms that were not run are all in the same block →
-[RESULTS.md §1](RESULTS.md#1-the-headline-coverage-at-zero-wrong-certificates).
+[RESULTS.md §1](https://github.com/teerthsharma/tangle/blob/main/RESULTS.md#1-the-headline-coverage-at-zero-wrong-certificates).
 
 ### Photograph to verdict, on the rendered corpus
 
@@ -219,14 +222,14 @@ histogram among certified verdicts, and the arms that were not run are all in th
 0 wrong, 34 refused** out of 80 rendered piles. Same extracted diagrams with the over/under
 reader swapped for a coin flip: **32 wrong certificates against 0**. The corpus is not too easy
 — a guesser fails loudly on it.
-→ [RESULTS.md §3](RESULTS.md#3-photograph-to-verdict-the-rendered-corpus)
+→ [RESULTS.md §3](https://github.com/teerthsharma/tangle/blob/main/RESULTS.md#3-photograph-to-verdict-the-rendered-corpus)
 
 ### Reproduce all of it
 
 ```bash
 python -m venv .venv && . .venv/*/activate   # .venv\Scripts\activate on Windows
 pip install -e ".[test]"
-pytest -q                # 196 passed
+pytest -q                # 204 passed, 2 skipped
 pytest -q -s             # the same run, with the tables above printed
 python bench.py          # the coverage table
 python -m tangle --synthetic --seed 1
@@ -284,7 +287,7 @@ Collected once, here.
 - **No real photographs yet.** Every number here comes from `tangle.synth`: matte constant-colour cables, no contact shadow, no specular highlight, no JPEG, no lens.
 - **No camera model, so no viewpoint-agreement measurement.** Invariance is tested as *diagram-move* invariance (R1/R2/R3), which is strictly weaker than camera invariance. The two-view interval intersection exists and is unwired.
 - **The corpus cannot exhibit `|lk| ≥ 2`.** An arch weaving across an arch cannot wrap twice; `|lk| ≥ 2` lives only in the `T(2,n)` family, which never goes through a camera.
-- **An even number of tracer errors is uncaught** and can produce a confidently wrong certified integer. Parity catches odd counts; nothing single-view catches pairs. This is the live false-certification path, stated here rather than discovered in a bench → [RESULTS.md §6](RESULTS.md#6-claims-not-earned).
+- **An even number of tracer errors is uncaught** and can produce a confidently wrong certified integer. Parity catches odd counts; nothing single-view catches pairs. This is the live false-certification path, stated here rather than discovered in a bench → [RESULTS.md §6](https://github.com/teerthsharma/tangle/blob/main/RESULTS.md#6-claims-not-earned).
 - **The certificate answers a narrower question than you will ask.** "Cannot be separated with the ends held" is not "will be annoying to untangle". An `lk = 0` pile can still be a nightmare of friction.
 - **Never claimed, in any code path or string:** *unlinked* from `lk = 0`; *unknotted* from `det = 1`; a knot name from any determinant; chirality; a probability, confidence or percentage attached to a verdict; any climbing, rigging or safety verdict; anything at all about the cables outside the frame.
 
@@ -296,12 +299,12 @@ Collected once, here.
 - 📷 **Real photographs.** Knots-10 ([arXiv:2603.23286](https://arxiv.org/abs/2603.23286), 1,440 images / 10 classes) and HANDLOOM's annotated RGB-D cable traces are downloadable and need no camera. Refuse rate and refusal-reason histogram ship first, before any accuracy claim.
 - 🪢 **Per-cable H-contraction**, so self-crossings stop being a refusal and real piles come into scope.
 - 🎥 **Multi-view.** `certify.intersect` already intersects two views' intervals, and disjoint intervals *prove* one trace is wrong. It needs a camera model before it is worth wiring up.
-- 🔢 **The Alexander determinant at `t = −1`.** Implemented and checked against a closed-form ladder (`det(T(2,n)) = n`, figure-eight 5, Whitehead 8), but it is genuinely nonlinear in the unknowns: no interval bound of the `O(k)` kind exists, so it needs the `2^k` enumeration under a measured budget (`K_MAX = 16`, set from the 39 µs per lift at ten crossings in [RESULTS.md §2](RESULTS.md#2-the-invariant-layer-against-closed-forms)).
+- 🔢 **The Alexander determinant at `t = −1`.** Implemented and checked against a closed-form ladder (`det(T(2,n)) = n`, figure-eight 5, Whitehead 8), but it is genuinely nonlinear in the unknowns: no interval bound of the `O(k)` kind exists, so it needs the `2^k` enumeration under a measured budget (`K_MAX = 16`, set from the 39 µs per lift at ten crossings in [RESULTS.md §2](https://github.com/teerthsharma/tangle/blob/main/RESULTS.md#2-the-invariant-layer-against-closed-forms)).
 
 ---
 
 <p align="center"><sub>
-<a href="LICENSE">MIT</a> · python ≥ 3.10 · <a href="RESULTS.md">RESULTS.md</a> ·
+<a href="https://github.com/teerthsharma/tangle/blob/main/LICENSE">MIT</a> · python ≥ 3.10 · <a href="https://github.com/teerthsharma/tangle/blob/main/RESULTS.md">RESULTS.md</a> ·
 Invented by <b>Teerth Sharma</b> · teerths57@gmail.com ·
 <a href="https://github.com/teerthsharma/tangle">github.com/teerthsharma/tangle</a><br>
 <code>knot-theory · linking-number · topological-invariant · computer-vision · zero-shot ·
