@@ -21,10 +21,13 @@ Reproduce all of it:
 python -m venv .venv
 .venv/Scripts/pip install numpy scipy scikit-image pillow pytest
 .venv/Scripts/pip install -e .
-.venv/Scripts/python -m pytest -q          # 204 passed, 2 skipped
+.venv/Scripts/python -m pytest -q          # 207 passed, 2 skipped
 .venv/Scripts/python -m pytest -q -s       # the same run, with the tables below printed
 .venv/Scripts/python bench.py              # the coverage table
 .venv/Scripts/python -m tangle --synthetic --seed 1
+.venv/Scripts/python real.py fetch --dir photos    # section 4: 247 images, 51 MB
+.venv/Scripts/python real.py run   --dir photos
+.venv/Scripts/python real.py control
 ```
 
 ---
@@ -196,7 +199,187 @@ pinned by a test.
 
 ---
 
-## 4. End to end, through the CLI
+## 4. Real images: 247 pictures this repository did not make
+
+Sections 1 to 3 are measured on `tangle.synth`, and a renderer cannot falsify the module
+that reads it: `synth` draws a cable as a constant-width stroke on a flat field with the
+occlusion gap it was told to draw, and `vision` looks for exactly that. This section is
+the first in the repository whose input came from somewhere else.
+
+```
+.venv/Scripts/python real.py fetch --dir photos
+.venv/Scripts/python real.py run   --dir photos --json real.json
+.venv/Scripts/python real.py control
+```
+
+```
+fetched   2026-09-05        99 + 72 + 27 + 49 = 247 images, 51 MB on disk
+suite     207 passed, 2 skipped
+```
+
+`fetch` writes `photos/manifest.json` with the URL, file page, licence, author and sha256
+of every image, so the corpus is pinned by content and a second fetch is the same corpus.
+Free licences only (CC0 / CC BY / CC BY-SA / public domain / Unlicense).
+
+| corpus | n | what it is | where it came from |
+|---|---|---|---|
+| `commons` | 99 | photographs of rope and knots | 20 pinned English Wikipedia articles on two-rope bends |
+| `cabling` | 72 | photographs of cabling | 7 pinned Commons searches: booster cables, patch leads, speaker wire |
+| `diagram` | 27 | link diagrams | pinned Commons files, 19 of them carrying a published linking number |
+| `knotcross` | 49 | line drawings of one closed curve | `tr33hugg3r/knot-crossings` test split on Hugging Face |
+
+### The headline
+
+```
+certified verdicts                  0   of 247
+wrong certificates                  0   of  19 labelled
+diagrams built at all               0   of 247
+```
+
+Not one real image reached `certify()`. Every one of the 247 was stopped by a tracer
+precondition, before any `Diagram` existed:
+
+| refusal | n | what it means about the picture |
+|---|---|---|
+| `BRANCHED_SKELETON` | 104 | a cable's own skeleton forks: it crosses itself, or two strands merged into one blob |
+| `NO_INTENSITY_GAP` | 65 | the two Otsu classes of cable-ness separate by `F < 2.0` |
+| `NOT_TWO_COMPONENTS` | 61 | one colour cluster, or two inside a Lab JND of each other |
+| `OPEN_TRACE` | 17 | the arcs do not chain into one curve, edge to edge or back to the start |
+
+Per corpus, as printed by `real.py run`:
+
+| corpus | n | REFUSED | `BRANCHED` | `NO_GAP` | `NOT_TWO` | `OPEN` |
+|---|---|---|---|---|---|---|
+| `commons` | 99 | 100.0% | 60 | 29 | 5 | 5 |
+| `cabling` | 72 | 100.0% | 31 | 36 | 4 | 1 |
+| `diagram` | 27 | 100.0% | 13 | 0 | 3 | 11 |
+| `knotcross` | 49 | 100.0% | 0 | 0 | 49 | 0 |
+
+`knotcross` is the out-of-domain control and it behaves: 49 of 49 drawings of *one* closed
+curve are refused at `NOT_TWO_COMPONENTS`, and a tracer that returned a verdict on any of
+them would be reading a second component that is not in the picture.
+
+### The control that makes the zero readable
+
+Zero certificates is a statement about the corpus only if the identical code path
+certifies something. `real.py control` renders 20 `synth` piles, writes them to PNG, and
+reads them back through the same `load_image` — the same resize, the same EXIF and alpha
+handling, the same `one()`:
+
+```
+synthetic control   n = 20
+  CERTIFIED          13    65.0%
+  REFUSED             7    35.0%
+    LK_STRADDLES_ZERO      4
+    OPEN_TRACE             2
+    BRANCHED_SKELETON      1
+```
+
+13 of 20 through the harness, 0 of 247 through the same harness on real input. The
+harness is not what is failing.
+
+The coin-flip control that section 3 runs — over/under replaced by `random.Random(20260905)`
+— is vacuous here and is printed anyway: it also certifies 0 of 247, because a diagram that
+was never built cannot have its crossings flipped. On the synthetic corpus the same control
+buys 32 wrong certificates, which is the number that says the over/under reader is doing
+work; on real input nothing gets far enough for it to say anything.
+
+### Against numbers published outside this repository
+
+19 of the 27 link diagrams carry a linking number nobody here wrote:
+
+| where the number comes from | images | example |
+|---|---|---|
+| Thistlethwaite link table | 3 | `L2a1` Hopf `\|lk\| = 1`, `L4a1` Solomon `2`, `L5a1` Whitehead `0` |
+| standard fact | 10 | the (2, n) torus link has `\|lk\| = n/2`; the Whitehead link has `0` |
+| the uploader's own filename | 6 | `Linking Number 3.svg`, by an author who has never heard of this tool |
+
+```
+right 0   WRONG 0   no verdict 19
+```
+
+The only column that could have been a disaster is `WRONG`, and it is empty because the
+tool never answered. A refusal costs a re-shoot; a wrong certificate tells somebody to
+leave a live cable plugged in.
+
+### The two gates that moved, and by how much
+
+**Segmentation.** Stage 4 used to take the widest *empty* run in a 512-bin histogram of
+cable-ness and require it to be five border-ring sigmas wide. That rule is satisfiable
+only by a renderer: `synth`'s histogram is two spikes with nothing between them, while a
+photograph's is dense everywhere, because antialiasing, shading and depth of field put
+real pixels in every bin. It is now Otsu's threshold with a refusal below Fisher's
+discriminant ratio of the two classes, `F = (mu_hi - mu_lo) / (s_hi + s_lo) >= 2.0`.
+Both rules measured on the same 247 images in one pass:
+
+| gate | admits, all 247 | admits, the 171 photographs |
+|---|---|---|
+| widest empty run `>= 5 sigma_ring` | 97 | 21 |
+| Otsu classes, `F >= 2.0` | 182 | 106 |
+
+`F` on the photographs runs 1.12 to 12.66 with a median of 2.48 (`commons`) and 1.18 to
+5.16 with a median of 2.05 (`cabling`); on the link diagrams 3.12 to 19.69. The bar of 2.0
+is calibrated against distributions with no object in them at all, which is what this gate
+exists to catch: 400,000 samples of a Gaussian give `F = 1.33`, a half-normal 1.46, and a
+uniform — the widest unimodal shape there is — 1.73.
+
+The envelope this bought on the synthetic side is in `tests/test_vision.py`: additive noise
+of `sigma = 16/255` traces 10 of 10 piles and `26/255` refuses 10 of 10, against `6/255`
+and `8/255` under the old rule. Two to three times the noise, and the twenty-pile sweep at
+seven noise levels says it was not bought with wrong certificates: 0 unsound certificates
+at every level.
+
+**Closed cables.** Every real link diagram is a pair of closed curves, and before this work
+the tracer could not represent one: `arcs()` refused a skeleton piece with no endpoints, and
+`chain()` required each cable to reach the edge of the frame. A cable no end of which
+reaches the frame is now chained into a cycle instead, and `Diagram.from_polylines` builds
+it with `closed=True` — which the certified layer has always supported, because
+`from_braid` produces exactly that. Tested on two drawn circles in
+`tests/test_vision.py::test_a_closed_pair_traces_as_two_closed_cables`: two closed cables,
+two crossings, `CERTIFIED LINKED |lk| = 1`, and `lk = 0` when one height is changed.
+
+**Transparency.** `load_image` used to call `convert("RGB")` on an RGBA file, which drops
+the alpha channel and keeps whatever colour sits under it — black, for every SVG Wikimedia
+renders to PNG. The tracer then measured a background nobody looking at the file sees.
+Transparency is now composited onto white.
+
+### The measured operating envelope
+
+The four refusals above are not four bugs. Each is a true statement about the picture, and
+together they are the first honest description of what this tool needs:
+
+1. two cables of visibly different colour, at least a Lab JND apart;
+2. neither of them crossing itself, and neither touching the other's jacket;
+3. each one either running out of the frame or closing on itself;
+4. a background the cables separate from at `F >= 2.0`.
+
+No image in a 247-image corpus drawn from four independent sources satisfies all four. The
+dominant violation is (2), at 104 of 247: a photograph of a knot is one rope crossing
+itself, and a published link diagram is drawn with a black outline that welds the strands
+into one region. Widening the envelope means resolving a degree-4 skeleton junction by
+tangent continuation — with a decisiveness margin, so an ambiguous blob still refuses —
+and that is not built.
+
+### What stays synthetic-only
+
+Every claim in sections 1, 2, 3, 5 and 6 is measured on `tangle.synth` or on closed-form
+diagrams, and none of it has been confirmed by a real image:
+
+- the coverage table and the 10.3-point gap (section 1);
+- 133 of 133 crossings read the right way round, and the 32 wrong certificates the
+  coin-flip control buys (section 3);
+- every over/under confidence, `TAU`, and the bridge-length constant `BRIDGE_K = 1.165`;
+- the noise, blur and antialiasing envelopes;
+- closed-cable tracing, which is exercised by two drawn circles and by no real image;
+- every number in `assets/`, and every CLI end-to-end verdict in section 5.
+
+The invariant layer (section 2) is the exception in the other direction: it is checked
+against closed forms published outside this repository — `det(T(2,n)) = n`, figure-eight 5,
+Whitehead 8 — and never against a picture.
+
+---
+
+## 5. End to end, through the CLI
 
 ```
 .venv/Scripts/python -m tangle --synthetic --seed 1
@@ -243,7 +426,7 @@ camera bearing. `assets/tangle.gif` is that scene's four frames.
 
 ---
 
-## 5. Every arm that lost
+## 6. Every arm that lost
 
 1. **Active perception ranking loses to random.** 19.9% certified after re-shooting the
    named crossing, 20.0% after re-shooting a uniformly random one at the same photograph
@@ -299,7 +482,7 @@ camera bearing. `assets/tangle.gif` is that scene's four frames.
 
 ---
 
-## 6. Claims NOT earned
+## 7. Claims NOT earned
 
 - **`lk = 0` never certifies "unlinked".** The Whitehead link has `lk = 0` and is not
   splittable. The honest output is `NOT CERTIFIED`. The certificate is one-directional,
@@ -321,7 +504,7 @@ camera bearing. `assets/tangle.gif` is that scene's four frames.
 
 ---
 
-## 7. Assets
+## 8. Assets
 
 `assets/` holds overlays reproduced by the full pipeline — `synth.render` ->
 `vision.trace` -> `certify` -> `viz.render`, with no hand-authored diagram anywhere:

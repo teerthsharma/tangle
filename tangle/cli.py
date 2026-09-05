@@ -162,11 +162,20 @@ def load_image(path: str):
     four ends: a diagram traced from an untransposed portrait photo has its exit points on
     the wrong sides.  Then the longest side goes to 1024, so the overlay's pixels and the
     diagram's coordinates are the same pixels.
+
+    **Transparency is composited onto white, not dropped.**  `convert("RGB")` on an RGBA
+    file discards the alpha channel and keeps whatever colour happens to sit under it,
+    which for the Wikimedia link renderings is black; the tracer then measures a background
+    nobody looking at the file sees, and the border ring reports a spread that belongs to
+    the file format rather than the scene.
     """
     import numpy as np
     from PIL import Image, ImageOps
 
-    img = ImageOps.exif_transpose(Image.open(path)).convert("RGB")
+    img = ImageOps.exif_transpose(Image.open(path))
+    if img.mode in ("RGBA", "LA", "PA") or (img.mode == "P" and "transparency" in img.info):
+        img = Image.alpha_composite(Image.new("RGBA", img.size, (255, 255, 255, 255)), img.convert("RGBA"))
+    img = img.convert("RGB")
     if max(img.size) > MAX_SIDE:
         s = MAX_SIDE / max(img.size)
         img = img.resize((max(1, round(img.width * s)), max(1, round(img.height * s))), Image.LANCZOS)

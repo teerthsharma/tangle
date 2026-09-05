@@ -37,7 +37,7 @@ reader replaced by a coin flip.
 
 Refusals raised here, before any Diagram exists, and each one terminal:
 
-    NO_INTENSITY_GAP    the histogram of cable-ness has no gap wide against ring noise
+    NO_INTENSITY_GAP    the two Otsu classes of cable-ness do not separate
     NOT_TWO_COMPONENTS  one colour cluster, or two closer than a Lab JND
     BRANCHED_SKELETON   a cable's own skeleton still branches after spur pruning
     OPEN_TRACE          the arcs of one cable do not chain into a single boundary-to-
@@ -56,6 +56,7 @@ from scipy import ndimage
 from scipy.cluster.vq import ClusterError, kmeans2
 from skimage.color import rgb2lab
 from skimage.draw import line as raster_line
+from skimage.filters import threshold_otsu
 from skimage.measure import approximate_polygon, label
 from skimage.morphology import closing, disk, remove_small_holes, remove_small_objects, skeletonize
 
@@ -85,7 +86,7 @@ class TraceRefused(Exception):
 # --------------------------------------------------------------------------------------
 
 RING = 12  # px of border ring used for the background estimate
-GAP_SIGMAS = 5.0  # the intensity gap must be this many ring sigmas wide
+FISHER_MIN = 2.0  # Otsu class separation, in units of the two class spreads
 JND_SEP = 12.0  # Lab distance between the two cluster centres, below which they are one
 CLUST_MARGIN = 0.25  # a pixel this far inside the mixed band is evidence for neither cable
 MIN_SHARE = 0.15  # each cable must own this share of the cable pixels, or there is one cable
@@ -103,6 +104,7 @@ GAP_R_W = 2.5  # a bridge counts as evidence about a crossing within this many w
 BRIDGE_K = 1.165
 BRIDGE_S = 0.85
 RDP_TOL = 0.75  # polyline simplification tolerance, px
+MIN_CYCLE_PX = 8  # a skeleton loop shorter than this is a cleanup artifact, not a cable
 
 
 # --------------------------------------------------------------------------------------
@@ -126,28 +128,48 @@ def background(rgb: np.ndarray, ring: int = RING) -> tuple[np.ndarray, np.ndarra
     return lab, bg, max(sigma, 1e-3)
 
 
-def threshold(de: np.ndarray, sigma: float) -> tuple[np.ndarray, float]:
-    """Widest empty run in a 512-bin histogram of cable-ness; midpoint is the threshold.
+def threshold(de: np.ndarray) -> tuple[np.ndarray, float]:
+    """Otsu's threshold on cable-ness, refused unless the two classes actually separate.
 
-    Certified against ring noise, not against sparsity: a clean image with two occupied
-    bins has a gap equal to its whole range and passes, which the old "gap vs median
-    inter-bin gap" rule refused.
+    The statistic is Fisher's discriminant ratio of the two Otsu classes,
+
+        F = (mu_hi - mu_lo) / (s_hi + s_lo)
+
+    and the trace declines below `FISHER_MIN`.  Otsu always returns a threshold, so the
+    refusal, not the threshold, is what carries the honesty here.
+
+    This used to be the widest *empty* run of bins in a 512-bin histogram of cable-ness,
+    with the run required to be `GAP_SIGMAS` border-ring sigmas wide.  That rule is
+    satisfiable only by a renderer.  `synth` paints a cable as a flat stroke on a flat
+    field, so its histogram is two spikes with nothing in between; a photograph's is dense
+    everywhere, because antialiasing, shading and depth of field put real pixels in every
+    bin between the two modes.  Measured over the 99 Wikimedia Commons knot photographs
+    `real.py` fetches: the widest empty run has a median of 0.39 units of Lab distance
+    against a median requirement of 39.2, and the old rule admitted 19 of the 99.  The
+    border ring was the second half of the problem -- on a photograph it holds scene, not
+    backdrop, so `sigma` measures the background's content and the bar rises with it.
+
+    `FISHER_MIN` is calibrated against distributions with no object in them at all, which
+    is the case this gate exists to catch: 400,000 samples of a Gaussian give F = 1.33, a
+    half-normal 1.46, and a uniform -- the widest unimodal shape there is -- 1.73.  Ten
+    `synth` piles (seeds 5-14) give 53.4 to 54.4, and the same piles under 8/255 additive
+    noise 7.63 to 7.79.  Over the 247 real images of RESULTS.md section 4 this rule admits
+    182 where the widest-run rule admitted 97, and 106 of the 171 photographs against 21;
+    the 99 knot photographs run from F = 1.12 to 12.66 with a median of 2.48.
     """
-    hist, edges = np.histogram(de, bins=512)
-    occ = np.flatnonzero(hist)
-    best_w, best_t = 0.0, None
-    for a, b in zip(occ[:-1], occ[1:]):
-        if b - a > 1:
-            w = float(edges[b] - edges[a + 1])
-            if w > best_w:
-                best_w, best_t = w, 0.5 * float(edges[a + 1] + edges[b])
-    if best_t is None or best_w < GAP_SIGMAS * sigma:
+    t = float(threshold_otsu(de))
+    hi = de > t
+    if not hi.any() or hi.all():
+        raise TraceRefused(NO_INTENSITY_GAP, "cable-ness is constant; nothing to segment")
+    lo_px, hi_px = de[~hi], de[hi]
+    fisher = float(hi_px.mean() - lo_px.mean()) / float(hi_px.std() + lo_px.std() + 1e-9)
+    if fisher < FISHER_MIN:
         raise TraceRefused(
             NO_INTENSITY_GAP,
-            f"widest gap {best_w:.2f} < {GAP_SIGMAS} * sigma_ring {sigma:.2f}; "
-            "the photograph does not separate cable from background",
+            f"Otsu classes separate by F = {fisher:.2f} < {FISHER_MIN}; the photograph "
+            "does not separate cable from background",
         )
-    return de > best_t, best_w
+    return hi, fisher
 
 
 def _clean(mask: np.ndarray) -> np.ndarray:
@@ -264,8 +286,26 @@ def prune(skel: np.ndarray, min_len: float) -> np.ndarray:
         skel = skeletonize(skel)
 
 
+def _simplify_closed(xy: np.ndarray) -> np.ndarray:
+    """RDP a polyline whose last point repeats its first.
+
+    `approximate_polygon` takes the chord from the first point to the last as its base
+    case, and on a closed curve that chord has zero length, so every point is within any
+    tolerance of it and the whole loop collapses to a point.  Simplifying the two halves
+    separately gives each one a chord with a direction.
+    """
+    h = len(xy) // 2
+    a = approximate_polygon(xy[: h + 1], tolerance=RDP_TOL)
+    b = approximate_polygon(xy[h:], tolerance=RDP_TOL)
+    return np.vstack([a[:-1], b])
+
+
 def arcs(mask: np.ndarray, w_est: float) -> list[np.ndarray]:
-    """Ordered centrelines, one per connected piece of the cable's own mask."""
+    """Ordered centrelines, one per connected piece of the cable's own mask.
+
+    A piece with no endpoints is a closed loop and comes back with its first point
+    repeated at the end, which is `Diagram.from_polylines`'s own convention for closed.
+    """
     skel = prune(skeletonize(mask), SPUR_W * w_est)
     deg = _degree(skel) * skel
     if (deg >= 4).any():
@@ -279,11 +319,24 @@ def arcs(mask: np.ndarray, w_est: float) -> list[np.ndarray]:
     for rid in range(1, int(lab_img.max()) + 1):
         m = lab_img == rid
         ends = np.argwhere(m & (deg == 2))
+        pixels = {(int(r), int(c)) for r, c in np.argwhere(m)}
+        if not len(ends) and len(pixels) >= MIN_CYCLE_PX:
+            start = min(pixels)
+            pix = _walk(pixels, start)
+            shut = max(abs(pix[-1][0] - start[0]), abs(pix[-1][1] - start[1])) <= 1
+            if len(pix) != len(pixels) or not shut:
+                raise TraceRefused(
+                    OPEN_TRACE,
+                    "a traced piece has no endpoints and is not a simple cycle",
+                )
+            xy = np.array([[c, r] for r, c in pix] + [[start[1], start[0]]], dtype=float)
+            out.append(_simplify_closed(xy))
+            continue
         if len(ends) != 2:
             raise TraceRefused(
-                OPEN_TRACE, f"a traced piece has {len(ends)} endpoints, not 2 (a closed loop?)"
+                OPEN_TRACE, f"a traced piece has {len(ends)} endpoints, not 2"
             )
-        pix = _walk({(int(r), int(c)) for r, c in np.argwhere(m)}, (int(ends[0][0]), int(ends[0][1])))
+        pix = _walk(pixels, (int(ends[0][0]), int(ends[0][1])))
         xy = np.array([[c, r] for r, c in pix], dtype=float)
         out.append(approximate_polygon(xy, tolerance=RDP_TOL))
     return out
@@ -309,6 +362,11 @@ def _walk(pix: set, start: tuple[int, int]) -> list[tuple[int, int]]:
 # --------------------------------------------------------------------------------------
 # stage 12: bridge the occlusion gaps into one boundary-to-boundary polyline
 # --------------------------------------------------------------------------------------
+
+
+def _shut(poly: np.ndarray) -> bool:
+    """Does this polyline repeat its first point at the end?  Then it is a closed curve."""
+    return bool(float(np.hypot(*(poly[-1] - poly[0]))) < 1e-9)
 
 
 def _tangent(poly: np.ndarray, end: int, span: float) -> np.ndarray:
@@ -344,8 +402,23 @@ def chain(
     straight bridge passes over *exactly one* run of the other cable -- otherwise it
     invents a crossing behind an obstruction, or invents one where two exist.  Then the
     admissible bridges are searched, not taken greedily: what has to come out is one chain
-    from one edge of the picture to the other, and anything else is OPEN_TRACE.
+    -- from one edge of the picture to the other for an open cable, back to where it began
+    for a closed one -- and anything else is OPEN_TRACE.
+
+    Which of the two a cable is, is read off the picture and not asked for: a cable no end
+    of which reaches the edge of the frame has nowhere to go but round.  The distinction
+    matters downstream, because only a closed pair has a linking number that is a
+    topological invariant rather than a count made against a fixed frame.
     """
+    if any(len(p) > 3 and _shut(p) for p in pieces):
+        if len(pieces) != 1:
+            raise TraceRefused(
+                OPEN_TRACE,
+                f"one piece of this cable closes on itself and {len(pieces) - 1} do not; "
+                "that is more than one curve",
+            )
+        return pieces[0], []
+
     ends = []  # (piece, which end, xy, outward tangent, is_boundary)
     for i, p in enumerate(pieces):
         for e in (0, 1):
@@ -360,8 +433,10 @@ def chain(
         for n in range(m + 1, len(ends)):
             i, _, pi, ti, bi = ends[m]
             j, _, pj, tj, bj = ends[n]
-            if i == j or bi or bj:
+            if bi or bj:
                 continue
+            if i == j and len(pieces) > 1:
+                continue  # a self-bridge is only ever the closing bridge of a lone arc
             gap = float(np.hypot(*(pj - pi)))
             if gap > G_OCC_W * w_est or gap == 0.0:
                 continue
@@ -394,32 +469,44 @@ def chain(
         out.setdefault(m, []).append((gap, n))
         out.setdefault(n, []).append((gap, m))
 
-    def walk(entry: int, used: frozenset) -> list[int] | None:
+    def walk(entry: int, used: frozenset, goal: int | None) -> list[int] | None:
         piece = entry // 2
         exit_ = 2 * piece + (1 - entry % 2)
         used = used | {piece}
         if len(used) == len(pieces):
-            return [entry] if ends[exit_][4] else None
+            if goal is None:  # open: the last exit has to leave the picture
+                return [entry] if ends[exit_][4] else None
+            return [entry] if any(n == goal for _, n in out.get(exit_, ())) else None
         for _, nxt in out.get(exit_, ()):
             if nxt // 2 in used:
                 continue
-            rest = walk(nxt, used)
+            rest = walk(nxt, used, goal)
             if rest is not None:
                 return [entry] + rest
         return None
 
-    chain_ends = None
+    chain_ends, shuts = None, False
     for m, e in enumerate(ends):
         if e[4]:  # a boundary end: a place the cable leaves the picture
-            chain_ends = walk(m, frozenset())
+            chain_ends = walk(m, frozenset(), None)
             if chain_ends is not None:
+                break
+    if chain_ends is None and not any(e[4] for e in ends):
+        for m in range(len(ends)):
+            chain_ends = walk(m, frozenset(), m)
+            if chain_ends is not None:
+                shuts = True
                 break
     if chain_ends is None:
         raise TraceRefused(
             OPEN_TRACE,
-            f"{len(pieces)} traced piece(s) do not chain into one curve from one edge of "
-            "the picture to the other",
+            f"{len(pieces)} traced piece(s) do not chain into one curve, either from one "
+            "edge of the picture to the other or back to where it started",
         )
+
+    def _bridge(m: int, n: int) -> tuple[Point, float]:
+        a, b = ends[m][2], ends[n][2]
+        return ((a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0), float(np.hypot(*(b - a)))
 
     pts: list[np.ndarray] = []
     bridges: list[tuple[Point, float]] = []
@@ -427,9 +514,11 @@ def chain(
         i, e = ends[entry][0], ends[entry][1]
         pts.append(pieces[i] if e == 0 else pieces[i][::-1])
         if idx + 1 < len(chain_ends):
-            a = ends[2 * i + (1 - e)][2]
-            b = ends[chain_ends[idx + 1]][2]
-            bridges.append((((a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0), float(np.hypot(*(b - a)))))
+            bridges.append(_bridge(2 * i + (1 - e), chain_ends[idx + 1]))
+    if shuts:
+        last = chain_ends[-1]
+        bridges.append(_bridge(2 * (last // 2) + (1 - last % 2), chain_ends[0]))
+        pts.append(pts[0][:1])  # repeat the first point: the polyline is closed
     return np.vstack(pts), bridges
 
 
@@ -511,9 +600,9 @@ def trace(rgb: np.ndarray, frame: tuple[float, float, float, float] | None = Non
     if frame is None:
         frame = (0.0, 0.0, float(w - 1), float(h - 1))
 
-    lab, bg, sigma = background(rgb)
+    lab, bg, _ = background(rgb)
     de = np.linalg.norm(lab - bg, axis=-1).astype(np.float32)
-    mask, _ = threshold(de, sigma)
+    mask, _ = threshold(de)
     mask = _clean(mask)
     masks = components(lab, mask)
     w_est = width_estimate(mask)
@@ -522,13 +611,16 @@ def trace(rgb: np.ndarray, frame: tuple[float, float, float, float] | None = Non
     polys, bridges = [], []
     for i, ps in enumerate(pieces):
         poly, br = chain(ps, masks[1 - i], w_est, frame)
-        polys.append(to_frame(poly, frame))
+        # `to_frame` pins the two free feet of an *open* cable to the frame edge.  A closed
+        # cable has no feet, and projecting its first and last point -- which are the same
+        # point -- onto the nearest edge would tear the loop open.
+        polys.append(poly if _shut(poly) else to_frame(poly, frame))
         bridges.append(br)
 
     d = Diagram.from_polylines(
         [[(float(x), float(y)) for x, y in p] for p in polys],
         frame=frame,
-        closed=False,
+        closed=None,  # a polyline that repeats its first point is a closed cable
         provenance=f"vision w_est={w_est:.1f}",
     )
     return read_over(d, bridges, w_est)

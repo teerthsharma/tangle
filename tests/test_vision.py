@@ -153,9 +153,9 @@ def test_a_same_coloured_pair_is_refused_not_guessed():
         assert e.value.reason == NOT_TWO_COMPONENTS
 
 
-def test_noise_destroys_the_intensity_gap_and_is_refused():
-    """The threshold is certified against ring noise, so enough noise closes the gap."""
-    img, _ = synth.render(synth.pile(0), noise=8.0, seed=1)
+def test_noise_destroys_the_class_separation_and_is_refused():
+    """Enough noise merges the two Otsu classes and the trace declines."""
+    img, _ = synth.render(synth.pile(0), noise=30.0, seed=1)
     with pytest.raises(vision.TraceRefused) as e:
         vision.trace(img)
     assert e.value.reason == vision.NO_INTENSITY_GAP
@@ -329,19 +329,22 @@ def test_the_unknown_policy_is_what_avoids_a_wrong_certificate():
     assert found, "no scene in the corpus exercised the abstention"
 
 
-def test_the_intensity_gap_threshold_has_a_cliff_and_the_cliff_is_a_refusal():
-    """Where does additive noise take the widest-gap threshold out?
+def test_the_segmentation_threshold_has_a_cliff_and_the_cliff_is_a_refusal():
+    """Where does additive noise take the Otsu class separation out?
 
-    The threshold is chosen by the widest representable gap in the intensity histogram, so
-    it does not degrade gracefully: once the noise fills the gap there is no threshold to
-    pick and the tracer has nothing to segment.  The failure direction is the one that
-    matters -- NO_INTENSITY_GAP, a refusal, never a wrong certificate -- and this pins both
-    sides of the cliff so a future change cannot quietly turn the refusal into a guess.
+    Otsu always returns a threshold, so what has to hold is the refusal below
+    `FISHER_MIN`: once the noise has merged the two classes the tracer must decline rather
+    than segment the noise.  This pins both sides of the cliff, and pins the direction of
+    the failure in between -- no certificate this sweep produces may contradict the scene.
 
-    Measured on ten piles: sigma = 6/255 traces 10/10, sigma = 8/255 refuses 10/10.
+    Measured on ten piles, seeds 5-14: sigma = 16/255 traces 10/10, sigma = 26/255 refuses
+    10/10 at NO_INTENSITY_GAP.  The widest-empty-histogram-run rule this replaced traced
+    10/10 at 6/255 and refused 10/10 at 8/255, so the envelope is between two and three
+    times wider; the twenty-pile soundness sweep below is what says the extra ground is
+    not bought with wrong certificates.
     """
     rows = []
-    for sigma in (6.0, 8.0):
+    for sigma in (16.0, 26.0):
         traced, refusals = 0, set()
         for seed in range(5, 15):
             img, _ = synth.render(synth.pile(seed), seed=seed, noise=sigma)
@@ -355,6 +358,105 @@ def test_the_intensity_gap_threshold_has_a_cliff_and_the_cliff_is_a_refusal():
     for sigma, traced, refusals in rows:
         print(f"    sigma {sigma:4.1f}/255   traced {traced:2d}/10   {sorted(refusals) or ''}")
     (_, below, _), (_, above, reasons) = rows
-    assert below == 10, "sigma = 6/255 used to trace every pile"
-    assert above == 0, "sigma = 8/255 used to refuse every pile"
+    assert below == 10, "sigma = 16/255 used to trace every pile"
+    assert above == 0, "sigma = 26/255 used to refuse every pile"
     assert reasons == {"NO_INTENSITY_GAP"}, reasons
+
+
+def test_no_noise_level_buys_a_certificate_the_scene_contradicts():
+    """The soundness half of the cliff, over the whole envelope.
+
+    Twenty piles at each of seven noise levels from 0 to 30/255.  Certificates disappear
+    as the noise rises; not one of them may be false at any level.
+
+    Measured, seeds 5-24: 13 certified and 0 unsound at every level up to 16/255, 11 and 0
+    at 20/255, and 0 certified at 30/255.
+    """
+    rows = []
+    for sigma in (0.0, 4.0, 8.0, 12.0, 16.0, 20.0, 30.0):
+        certified, unsound = 0, 0
+        for seed in range(5, 25):
+            img, truth = synth.render(synth.pile(seed), seed=seed, noise=sigma)
+            try:
+                d = vision.trace(img)
+            except vision.TraceRefused:
+                continue
+            v = certify(d)
+            if v.status == CERTIFIED:
+                certified += 1
+                unsound += not _sound(v, _expected_lk(d, truth))
+        rows.append((sigma, certified, unsound))
+    print("\n  twenty piles per noise level")
+    for sigma, certified, unsound in rows:
+        print(f"    sigma {sigma:4.1f}/255   certified {certified:2d}   unsound {unsound}")
+    assert [u for _, _, u in rows] == [0] * len(rows)
+    assert rows[0][1] == 13, "the quiet corpus used to certify 13 of 20"
+    assert rows[-1][1] == 0, "sigma = 30/255 used to certify nothing at all"
+
+
+# --------------------------------------------------------------------------------------
+# closed cables
+# --------------------------------------------------------------------------------------
+
+
+def _ring(draw, cx, cy, r, colour, width, t0=0.0, t1=1.0):
+    """One arc of a circle, drawn as a thick polyline."""
+    pts = [
+        (cx + r * math.cos(2 * math.pi * t), cy + r * math.sin(2 * math.pi * t))
+        for t in [t0 + (t1 - t0) * i / 240.0 for i in range(241)]
+    ]
+    draw.line(pts, fill=colour, width=width, joint="curve")
+
+
+def _two_rings(a_over_at):
+    """Two overlapping circles, drawn with the occlusions a chosen height function gives.
+
+    Not a photograph and not `synth`: `synth` cannot draw a closed cable at all, because
+    `synth.truth` builds every scene with `closed=False` and every cable runs out of the
+    frame.  This is the smallest scene that exercises the closed path -- the cycle in
+    `arcs`, the closing bridge in `chain`, and the `closed=True` cable `from_polylines`
+    then builds -- and it is a Hopf link when the two crossings disagree and an unlink
+    when they agree.
+
+    `a_over_at` is which of the two crossings the red circle passes over, as a set.
+    """
+    import numpy as np
+    from PIL import Image, ImageDraw
+
+    im = Image.new("RGB", (520, 360), (250, 250, 250))
+    d = ImageDraw.Draw(im)
+    red, blue, w = (220, 30, 30), (30, 30, 220), 14
+    _ring(d, 190, 180, 120, red, w)
+    _ring(d, 330, 180, 120, blue, w)
+    # The circles meet at x = 260, y = 180 -/+ sqrt(120^2 - 70^2), which is t = -/+0.1506
+    # of the way round the red one.  Redraw a short arc of red over each meeting red is
+    # meant to pass over; the blue drawn second is the over-strand everywhere else.
+    for which, t in ((0, -0.1506), (1, 0.1506)):
+        if which in a_over_at:
+            _ring(d, 190, 180, 120, red, w, t0=t - 0.03, t1=t + 0.03)
+    return np.asarray(im)
+
+
+def test_a_closed_pair_traces_as_two_closed_cables():
+    """Two drawn circles: two closed cables, two crossings, and a certified |lk| = 1.
+
+    This is the code path every real link diagram needs and no `synth` scene has: before
+    it, `arcs` refused a skeleton with no endpoints and `chain` refused a cable that never
+    reaches the frame, so a closed pair could not be represented at all.
+    """
+    d = vision.trace(_two_rings({0}))
+    assert [c.closed for c in d.cables] == [True, True], [c.closed for c in d.cables]
+    assert len(d.between(0, 1)) == 2, d.between(0, 1)
+    assert d.validate() is None, d.validate()
+    v = certify(d)
+    assert v.status == CERTIFIED and v.claim == LINKED, v.line()
+    assert abs(v.value) == 1, v.value
+
+
+def test_the_same_two_rings_with_one_height_changed_are_not_linked():
+    """Red over at both meetings is the unlink, and the same pixels have to say so."""
+    d = vision.trace(_two_rings({0, 1}))
+    assert [c.closed for c in d.cables] == [True, True]
+    assert len(d.between(0, 1)) == 2
+    v = certify(d)
+    assert v.status == CERTIFIED and v.value == 0, v.line()
