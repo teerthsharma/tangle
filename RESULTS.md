@@ -183,8 +183,13 @@ pinned by a test.
   NOT CERTIFIED  OVER_MIXED                                         lk = 0
   interval [0, 0]   S = 0
   look at  crossing 0, 5
-  source   from_braid([1, 1, -1, 1, -1, -1], strands=2)             exit 0
+  source   from_braid([1, 1, -1, 1, -1, -1], strands=2)             exit 1
 ```
+
+Exit codes are the verdict, so a shell can branch on them without parsing the block:
+`0` CERTIFIED, `1` NOT CERTIFIED, `2` REFUSED, `3` bad input. All four are measured
+below; read them with `echo $?` on the process itself, not through a pipe, which reports
+the last stage's code instead.
 
 ```
 .venv/Scripts/python -m tangle clasp.png          # synth.clasp(sign=+1), seed 1
