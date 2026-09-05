@@ -327,3 +327,34 @@ def test_the_unknown_policy_is_what_avoids_a_wrong_certificate():
                     break
     print(f"\n  scenes where the interval straddles zero and a guess certifies anyway: {found}")
     assert found, "no scene in the corpus exercised the abstention"
+
+
+def test_the_intensity_gap_threshold_has_a_cliff_and_the_cliff_is_a_refusal():
+    """Where does additive noise take the widest-gap threshold out?
+
+    The threshold is chosen by the widest representable gap in the intensity histogram, so
+    it does not degrade gracefully: once the noise fills the gap there is no threshold to
+    pick and the tracer has nothing to segment.  The failure direction is the one that
+    matters -- NO_INTENSITY_GAP, a refusal, never a wrong certificate -- and this pins both
+    sides of the cliff so a future change cannot quietly turn the refusal into a guess.
+
+    Measured on ten piles: sigma = 6/255 traces 10/10, sigma = 8/255 refuses 10/10.
+    """
+    rows = []
+    for sigma in (6.0, 8.0):
+        traced, refusals = 0, set()
+        for seed in range(5, 15):
+            img, _ = synth.render(synth.pile(seed), seed=seed, noise=sigma)
+            try:
+                vision.trace(img)
+                traced += 1
+            except vision.TraceRefused as e:
+                refusals.add(e.reason)
+        rows.append((sigma, traced, refusals))
+    print("\n  additive Gaussian noise, ten piles per level")
+    for sigma, traced, refusals in rows:
+        print(f"    sigma {sigma:4.1f}/255   traced {traced:2d}/10   {sorted(refusals) or ''}")
+    (_, below, _), (_, above, reasons) = rows
+    assert below == 10, "sigma = 6/255 used to trace every pile"
+    assert above == 0, "sigma = 8/255 used to refuse every pile"
+    assert reasons == {"NO_INTENSITY_GAP"}, reasons
