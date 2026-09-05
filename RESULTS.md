@@ -12,7 +12,8 @@ seeds     20260905 (nuisance + coin flip), 1000..1399 (braid corpus)
 
 `bench.py` prints whatever `HEAD` is when it runs, so the hash in the block below is the
 commit that produced the numbers, not the commit that records them: the documentation
-commits that follow move `HEAD` without moving a number.
+commits that follow move `HEAD` without moving a number. The seconds on that same line are
+wall clock and land between 0.29 and 0.31 s across runs; every other field is exact.
 
 Reproduce all of it:
 
@@ -163,8 +164,9 @@ the scene rather than against itself.
 
 That histogram counts the 26 scenes the **tracer** refused, where no diagram was ever
 built. The 34 refusals in the table above it are those 26 plus the 8 scenes that traced
-and then refused in the certified layer with `LK_STRADDLES_ZERO`; `bench.py` lists those 8
-by arm and seed. 45 certified + 34 refused + 1 `NOT CERTIFIED` = 80.
+and then refused in the certified layer with `LK_STRADDLES_ZERO`; the `-s` run of
+`tests/test_vision.py` lists those 8 by arm and seed. 45 certified + 34 refused + 1
+`NOT CERTIFIED` = 80.
 
 The control is the same extracted diagrams with the over/under reader replaced by a coin
 flip: **32 wrong certificates across the four arms**, against 0. The corpus is therefore

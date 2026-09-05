@@ -71,7 +71,8 @@ overlay -> verdict.png
 
 **Zero-shot. No training. No neural network. No dataset. No GPU.** Just `numpy`, `scipy`,
 `scikit-image`, `pillow` and a theorem from 1833. Runs on-device and offline on a laptop CPU —
-the certified layer turns out 2,000 verdicts in **under 0.3 s**, real-time by any camera's standard.
+the certified layer turns out 2,000 verdicts in **about 0.3 s** (0.29-0.31 s over three
+runs), real-time by any camera's standard.
 
 ---
 
@@ -301,8 +302,8 @@ Five design verdicts that are now dead, and two arms that lost after they shippe
 - 🪦 **"`lk = 0` means just pull."** The Whitehead link. Killed, and the word is banned in code.
 - 🪦 **"Closing the diagram at the frame boundary makes `lk` camera-invariant."** It does not: the exit points move with the camera, and an exterior crossing's over/under is a *convention* that does not flip when its planar sign does. **The closure was deleted.** The object is a 2-string tangle with pinned ends, which needs no closure at all.
 - 🪦 **"A width bump at the crossing reads over/under."** For opaque cables the silhouette is *provably* depth-blind — the mask is bitwise identical under swapping which cable is on top. The cue carried zero information and was reading the renderer's drop shadow. There is now a test called `test_silhouette_carries_no_depth`.
-- 🪦 **"A `1.2·w_est` contraction radius merges the skeleton's H-pattern."** It covers only crossings above ~47°. Replaced by an angle-aware rule against a measured bridge-length table.
-- 🪦 **"`det = 5` certifies a figure-eight tie-in."** A follow-through is tied on a bight, so the doubled rope bounds a band and the traced curve is the *unknot*, `det = 1`. That is why climbing, rigging and every load-bearing verdict are out of scope **in code**, not in prose.
+- 🪦 **"A contraction radius fixed in cable widths merges the skeleton's H-pattern."** It cannot: the bridge of an H at crossing angle θ is about `w / sin θ` long, so a constant radius always loses the shallow crossings. Replaced by an angle-aware admissibility rule on the bridge length (`vision.BRIDGE_K`).
+- 🪦 **"`det = 5` certifies a figure-eight tie-in."** A follow-through is tied on a bight, so the doubled rope bounds a band and the traced curve is the *unknot*, `det = 1`. That is why climbing, rigging and every load-bearing verdict are out of scope: the determinant is computed, but no code path turns one into a knot name, and the verdict vocabulary (`LINKED`, `SEPARABLE`, and the refusal reasons) carries no value that could state a safety claim.
 - 📉 **Active perception lost to random.** Re-shooting the crossing the tool names: 19.9% certified. Re-shooting a uniformly random crossing at the same photograph budget: 20.0%. This was **predicted before it was measured** — `lk` is affine, so every unknown shrinks the interval by exactly 1 and no crossing is more decisive than any other. The `|sin θ|` ranking is a *perception* heuristic, not an information criterion. `bench.py` prints it; it is not buried.
 - 📉 **On rendered scenes the interval theorem certified nothing the plain half-sum would not have.** All 45 certified verdicts across four nuisance arms had `k = 0`. The 10.3-point coverage gap exists on the braid corpus, where the unknowns are injected on purpose.
 
@@ -331,7 +332,7 @@ Collected once, here.
 - 📷 **Real photographs.** Knots-10, `tr33hugg3r/knot-crossings` and HANDLOOM's cable images are downloadable and need no camera. Refuse rate and refusal-reason histogram ship first, before any accuracy claim.
 - 🪢 **Per-cable H-contraction**, so self-crossings stop being a refusal and real piles come into scope.
 - 🎥 **Multi-view.** `certify.intersect` already intersects two views' intervals, and disjoint intervals *prove* one trace is wrong. It needs a camera model before it is worth wiring up.
-- 🔢 **The Alexander determinant at `t = −1`.** Implemented and checked against a closed-form ladder (`det(T(2,n)) = n`, figure-eight 5, Whitehead 8), but it is genuinely nonlinear in the unknowns: no interval bound of the `O(k)` kind exists, so it needs the `2^k` enumeration under a measured budget (`K_MAX = 16`, set from 35.6 µs per lift).
+- 🔢 **The Alexander determinant at `t = −1`.** Implemented and checked against a closed-form ladder (`det(T(2,n)) = n`, figure-eight 5, Whitehead 8), but it is genuinely nonlinear in the unknowns: no interval bound of the `O(k)` kind exists, so it needs the `2^k` enumeration under a measured budget (`K_MAX = 16`, set from the 39 µs per lift at ten crossings in [RESULTS.md §2](RESULTS.md)).
 
 ---
 
