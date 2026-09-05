@@ -4,11 +4,15 @@ Everything below was produced by the commands shown, on one machine, at one comm
 No number here is quoted from a paper, a docstring, or an earlier run.
 
 ```
-commit    2c8cb70            (working tree clean; bench.py prints its own HEAD)
+commit    ac84ca0            the last commit that changed code, working tree clean
 machine   WIN-16QAL06O9GB    Windows 11, python 3.11.9
 library   numpy 2.4.6   scipy 1.17.1   scikit-image 0.26.0   pillow 12.3.0
 seeds     20260905 (nuisance + coin flip), 1000..1399 (braid corpus)
 ```
+
+`bench.py` prints whatever `HEAD` is when it runs, so the hash in the block below is the
+commit that produced the numbers, not the commit that records them: the documentation
+commits that follow move `HEAD` without moving a number.
 
 Reproduce all of it:
 
@@ -38,8 +42,8 @@ zero errors, so the only row that could have come out badly is the gap between t
   certified pairs, at 0 wrong certified verdicts
   400 braid seeds x k = 0..4 blurred crossings = 2000 entries
 ==============================================================================
-    tangle                                 23.6%   0 wrong (<=0.1% at 95%)
-    abstain on any unknown crossing        13.2%   0 wrong (<=0.1% at 95%)
+    tangle                                 23.6%   0 wrong (<=0.6% of certified at 95%)
+    abstain on any unknown crossing        13.2%   0 wrong (<=1.1% of certified at 95%)
     ------------------------------------------------
     coverage gained by the interval theorem  10.3   points
 
@@ -59,7 +63,14 @@ zero errors, so the only row that could have come out badly is the gap between t
   "certified over all 2^k resolutions" is doing less work than it sounds.
     k=0: 276  k=1: 147  k=2: 49
 ==============================================================================
-  commit 2c8cb70   machine WIN-16QAL06O9GB   python 3.11.9   0.3 s
+  the REFUSED rate above is a function of the blur schedule -- up to
+  k = 4 of 6 crossings erased on purpose -- and is NOT a photograph's
+  refuse rate.  That number needs the tracer and is not measured here.
+------------------------------------------------------------------------------
+  not run here: the R2-drape alternation control and the mask-overlap
+  control need rendered scenes; every real-photograph table needs the tracer.
+==============================================================================
+  commit ac84ca0   machine WIN-16QAL06O9GB   python 3.11.9   0.29 s
 ==============================================================================
 ```
 
@@ -86,15 +97,17 @@ crossings are erased on purpose. A photograph's refuse rate is section 3.
   0/1000 patterns disagree (192,540 lifts enumerated, k <= 10, seed 20260905)
 
   per-lift determinant cost, shadow hoisted out of the loop:
-    (2,6) torus,  6 crossings:   12.6 us   ->  2^16 lifts = 0.8 s
-    (2,10) torus, 10 crossings:  35.6 us   ->  2^16 lifts = 2.3 s
+    (2,6) torus, 6 crossings:   13.8 us   ->  2^16 lifts =   0.9 s
+    (2,10) torus, 10 crossings:   39.0 us   ->  2^16 lifts =   2.6 s
 ```
 
 The control for the interval is `brute_force_interval`, which resolves every one of the
 2^k lifts through `Diagram.resolve` / `Diagram.sign` rather than re-deriving the closed
 form, so the two paths share no arithmetic. `K_MAX = 16` for the determinant is set from
-the 35.6 us measurement, not chosen: 2^16 lifts is 2.3 s, and `det_values` raises
-`DeterminantRefused(K_EXCEEDS_BOUND)` above it rather than hanging.
+that per-lift measurement, not chosen: 2^16 lifts is under 3 s, and `det_values` raises
+`DeterminantRefused(K_EXCEEDS_BOUND)` above it rather than hanging. The two microsecond
+figures are wall-clock and move a few percent between runs on the same machine; the test
+asserts the ceiling that fixes `K_MAX`, not the figure.
 
 Determinant known-answer family, verified for every entry:
 
@@ -139,14 +152,19 @@ the scene rather than against itself.
   coin flip on the identical diagrams, seed 20260905
     clean          read  16 certified / 0 wrong    coin  19 certified / 11 wrong
     blur 1.0 px    read  18 certified / 0 wrong    coin  18 certified / 12 wrong
-    blur 3.0 px    read   3 certified / 0 wrong    coin   2 certified /  1 wrong
-    antialiased    read   8 certified / 0 wrong    coin  12 certified /  8 wrong
+    blur 3.0 px    read   3 certified / 0 wrong    coin   2 certified / 1 wrong
+    antialiased    read   8 certified / 0 wrong    coin  12 certified / 8 wrong
 
   refusal reasons over every arm
     NOT_TWO_COMPONENTS    15
     BRANCHED_SKELETON      7
     OPEN_TRACE             4
 ```
+
+That histogram counts the 26 scenes the **tracer** refused, where no diagram was ever
+built. The 34 refusals in the table above it are those 26 plus the 8 scenes that traced
+and then refused in the certified layer with `LK_STRADDLES_ZERO`; `bench.py` lists those 8
+by arm and seed. 45 certified + 34 refused + 1 `NOT CERTIFIED` = 80.
 
 The control is the same extracted diagrams with the over/under reader replaced by a coin
 flip: **32 wrong certificates across the four arms**, against 0. The corpus is therefore
@@ -190,6 +208,12 @@ Exit codes are the verdict, so a shell can branch on them without parsing the bl
 `0` CERTIFIED, `1` NOT CERTIFIED, `2` REFUSED, `3` bad input. All four are measured
 below; read them with `echo $?` on the process itself, not through a pipe, which reports
 the last stage's code instead.
+
+The two scenes are rendered by the pipeline, not shipped:
+
+```
+.venv/Scripts/python -c "from PIL import Image; from tangle import synth as s; Image.fromarray(s.render(s.clasp(sign=1), seed=1)[0]).save('clasp.png'); Image.fromarray(s.render(s.pile(5), seed=5)[0]).save('pile5.png')"
+```
 
 ```
 .venv/Scripts/python -m tangle clasp.png          # synth.clasp(sign=+1), seed 1
