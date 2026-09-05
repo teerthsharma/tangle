@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tangle"
+version = "0.1.0"
+description = "Photograph two cables and get an integer with a proof, or a refusal that names the crossing to re-shoot."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Teerth Sharma", email = "teerths57@gmail.com" }]
+keywords = [
+    "knot-theory",
+    "linking-number",
+    "computational-topology",
+    "certificate",
+    "abstention",
+    "active-perception",
+]
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "scikit-image>=0.22",
+    "pillow>=10.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7.4"]
+
+[project.scripts]
+tangle = "tangle.cli:main"
+
+[tool.setuptools]
+# The package ships flat at the repo root. No src/ wrapper.
+packages = ["tangle"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
