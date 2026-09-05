@@ -21,7 +21,7 @@ Reproduce all of it:
 python -m venv .venv
 .venv/Scripts/pip install numpy scipy scikit-image pillow pytest
 .venv/Scripts/pip install -e .
-.venv/Scripts/python -m pytest -q          # 207 passed, 2 skipped
+.venv/Scripts/python -m pytest -q          # 226 passed, 2 skipped
 .venv/Scripts/python -m pytest -q -s       # the same run, with the tables below printed
 .venv/Scripts/python bench.py              # the coverage table
 .venv/Scripts/python -m tangle --synthetic --seed 1
@@ -185,17 +185,19 @@ Refuse rate per arm, against the 40% kill gate: clean **20%** (pass), blur 1.0 p
 ### Noise: a cliff, not a slope
 
 ```
-.venv/Scripts/python -m pytest -q -s tests/test_vision.py -k intensity_gap
+.venv/Scripts/python -m pytest -q -s tests/test_vision.py -k cliff_and_the_cliff
 
   additive Gaussian noise, ten piles per level
-    sigma  6.0/255   traced 10/10
-    sigma  8.0/255   traced  0/10   ['NO_INTENSITY_GAP']
+    sigma 16.0/255   traced 10/10
+    sigma 26.0/255   traced  0/10   ['NO_INTENSITY_GAP']
 ```
 
-The threshold is chosen by the widest representable gap in the intensity histogram, so it
-does not degrade: between sigma = 6 and sigma = 8 grey levels it goes from every pile to no
-pile. The failure direction is a refusal, never a wrong certificate, and both sides are
-pinned by a test.
+Otsu always returns a threshold, so what pins this is the refusal below `FISHER_MIN`: once
+the noise has merged the two classes the tracer declines rather than segment the noise. It
+does not degrade gracefully -- between sigma = 16 and sigma = 26 grey levels it goes from
+every pile to no pile. The failure direction is a refusal, never a wrong certificate, and
+both sides are pinned by a test. Under the widest-empty-histogram-run rule that section 4
+replaced, the same cliff sat at 6/255 and 8/255.
 
 ---
 
@@ -214,7 +216,7 @@ the first in the repository whose input came from somewhere else.
 
 ```
 fetched   2026-09-05        99 + 72 + 27 + 49 = 247 images, 51 MB on disk
-suite     207 passed, 2 skipped
+suite     226 passed, 2 skipped   (207 at b020cad, before the input-hardening tests)
 ```
 
 `fetch` writes `photos/manifest.json` with the URL, file page, licence, author and sha256
@@ -454,9 +456,14 @@ camera bearing. `assets/tangle.gif` is that scene's four frames.
 5. **Same-colour cables are out of scope.** `NOT_TWO_COMPONENTS` on 15 of 80 scenes. Colour
    does segmentation; continuity does over/under. A monochrome pile refuses.
 
-6. **Noise above sigma = 6/255 is a total loss**, 10/10 traced to 0/10 in two grey levels.
+6. **Noise above sigma = 16/255 is a total loss**, 10/10 traced at 16/255 to 0/10 at
+   26/255. Two to three times the old envelope, which sat at 6/255 and 8/255 under
+   the widest-empty-run rule, and the twenty-pile sweep at seven levels says the
+   extra ground was not bought with wrong certificates: 0 unsound at every level.
 
-7. **No real photographs.** Every number here comes from `tangle.synth`: matte
+7. **No real photograph has ever produced a verdict.** Section 4 is the measurement:
+   247 free-licensed images, 0 certified, 0 diagrams built at all. Every number in
+   sections 1, 2, 3, 5 and 6 therefore comes from `tangle.synth`: matte
    constant-colour cables, no contact shadow, no specular highlight, no JPEG, no camera
    model, no lens. The generator also rejects self-crossings, crossings closer than 4 cable
    widths, and crossing angles below 25 degrees. That rejection is a scope condition on the
