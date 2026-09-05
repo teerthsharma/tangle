@@ -374,12 +374,12 @@ def coin_vs_occlusion(seed=50, coin_seed=15, size=(1800, 726)):
          "the under-strand's own mask is interrupted where the other cable crosses it",
          GREEN, "unplug one",
          [f"Right. |lk| = {abs(t.value)}, and the braid word this scene was built from says {abs(t.value)}.",
-          "0 wrong certificates over 2,000 diagrams."]),
+          "0 wrong certificates over 80 diagrams."]),
         (dc, vc, f"read by a coin flip",
          f"random.Random({coin_seed}).choice('ab') at every crossing, nothing else changed",
          RED, "just pull",
          ["WRONG. This pile provably cannot be pulled apart with its ends held.",
-          "32 wrong certificates over the same 2,000 diagrams."]),
+          "47 wrong certificates over the same 80 diagrams."]),
     ]
     for i, (dd, vv, title, sub, colour, action, lines) in enumerate(panels):
         x = pad + i * (pw + gut)

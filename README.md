@@ -304,12 +304,12 @@ itself.
     antialiased    read  14 certified / 0 wrong    coin  19 certified / 11 wrong
 ```
 
-Same extracted diagrams, over/under reader swapped for a coin flip: **32 wrong certificates against
+Same extracted diagrams, over/under reader swapped for a coin flip: **47 wrong certificates against
 0.** The corpus is not too easy — a guesser fails loudly on it.
 → [RESULTS.md §3](https://github.com/teerthsharma/tangle/blob/main/RESULTS.md#3-photograph-to-verdict-the-rendered-corpus)
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/teerthsharma/tangle/main/assets/coin-vs-occlusion.png" alt="The same rendered scene twice. Read from occlusion continuity it is CERTIFIED LINKED, unplug one, 0 wrong certificates. With the over/under reader replaced by a coin flip the same diagram is CERTIFIED SEPARABLE, just pull, which is wrong: 32 wrong certificates over the same 2,000 diagrams.">
+<img src="https://raw.githubusercontent.com/teerthsharma/tangle/main/assets/coin-vs-occlusion.png" alt="The same rendered scene twice. Read from occlusion continuity it is CERTIFIED LINKED, unplug one, 0 wrong certificates. With the over/under reader replaced by a coin flip the same diagram is CERTIFIED SEPARABLE, just pull, which is wrong: 47 wrong certificates over the same 80 diagrams.">
 </p>
 
 ### Reproduce all of it
@@ -365,7 +365,7 @@ Six design verdicts that are now dead, and two arms that lost after they shipped
 - **"`det = 5` certifies a figure-eight tie-in."** A follow-through is tied on a bight, so the doubled rope bounds a band and the traced curve is the *unknot*, `det = 1`. That is why climbing, rigging and every load-bearing verdict are out of scope: the determinant is computed, but no code path turns one into a knot name.
 - **"Threshold at the widest empty gap in the histogram."** That rule is satisfiable only by a renderer. A rendered cable is a flat stroke on a flat field, so its histogram is two spikes with nothing between; a photograph's is dense in every bin, because antialiasing, shading and depth of field put real pixels everywhere. Measured on the same 247 real images, the old rule admitted 97 and the Otsu-plus-Fisher rule that replaced it admits 182 (21 against 106 of the 171 photographs). It also widened the synthetic noise envelope from `σ = 6/255` to `σ = 16/255`, with 0 unsound certificates across a 7-level, 20-pile sweep.
 - **Active perception lost to random.** Re-shooting the crossing the tool names: 19.9% certified. Re-shooting a uniformly random crossing at the same photograph budget: 20.0%. This was **predicted before it was measured** — `lk` is affine, so every unknown shrinks the interval by exactly 1 and no crossing is more decisive than any other. The `|sin θ|` ranking is a *perception* heuristic, not an information criterion. `bench.py` prints it; it is not buried.
-- **On rendered scenes the interval theorem certified nothing the plain half-sum would not have.** All 45 certified verdicts across four nuisance arms had `k = 0`. The 10.3-point coverage gap exists on the braid corpus, where the unknowns are injected on purpose.
+- **On rendered scenes the interval theorem certified nothing the plain half-sum would not have.** All 63 certified verdicts across four nuisance arms had `k = 0`. The 10.3-point coverage gap exists on the braid corpus, where the unknowns are injected on purpose.
 
 ---
 
@@ -374,11 +374,11 @@ Six design verdicts that are now dead, and two arms that lost after they shipped
 Collected once, here.
 
 - **It has been run on real images and it certified none of them.** 247 free-licensed images produce 0 certified verdicts, 0 wrong certificates, and 0 diagrams built at all. The same harness certifies 13 of 20 rendered piles through the same PNG round trip, so the zero is the corpus, not the plumbing.
-- **Two visually distinct cables, or it refuses.** Colour does the segmentation, so a pile of identical black charging cables is one mask and `NOT_TWO_COMPONENTS` — 15 of 80 rendered scenes, and 61 of 247 real ones. The most common real scene is the worst case.
-- **Self-crossings are refused, not handled.** `BRANCHED_SKELETON` on 7 of 80 rendered scenes and **104 of 247 real ones**. On a real pile most crossings are self-crossings, which makes this the single largest limit on the imaging layer, and the dominant reason the real number is zero.
+- **Two visually distinct cables, or it refuses.** Colour does the segmentation, so a pile of identical black charging cables is one mask and `NOT_TWO_COMPONENTS` — 0 of 80 rendered scenes on the current segmentation gate, and 61 of 247 real ones. The most common real scene is the worst case.
+- **Self-crossings are refused, not handled.** `BRANCHED_SKELETON` on 0 of 80 rendered scenes on the current gate and **104 of 247 real ones**. On a real pile most crossings are self-crossings, which makes this the single largest limit on the imaging layer, and the dominant reason the real number is zero.
 - **Noise is a cliff, not a slope.** `σ = 16/255` traces 10/10 piles; `σ = 26/255` traces 0/10. The failure direction is always a refusal, never a wrong certificate, and 20 piles at each of 7 noise levels produce 0 certificates the scene contradicts.
-- **Two of four nuisance arms fail the 40% refuse gate.** blur 3.0 px refuses 85%; antialiased refuses 55%.
-- **Every benchmark percentage on this page except the real-image table comes from `tangle.synth`.** Coverage, the 133 of 133 crossings read the right way round, the 32 wrong certificates the coin flip buys, `TAU`, `BRIDGE_K`, the blur and antialiasing arms, closed-cable tracing, and every asset. The invariant layer is the one exception, and it is checked against closed forms rather than pictures.
+- **All four nuisance arms clear the 40% refuse gate.** clean refuses 20%, blur 1.0 px 15%, blur 3.0 px 20%, antialiased 30% — highest is antialiased, still under the gate.
+- **Every benchmark percentage on this page except the real-image table comes from `tangle.synth`.** Coverage, the 182 of 182 crossings read the right way round, the 47 wrong certificates the coin flip buys, `TAU`, `BRIDGE_K`, the blur and antialiasing arms, closed-cable tracing, and every asset. The invariant layer is the one exception, and it is checked against closed forms rather than pictures.
 - **No camera model, so no viewpoint-agreement measurement.** Invariance is tested as *diagram-move* invariance (R1/R2/R3), which is strictly weaker than camera invariance. The two-view interval intersection exists and is unwired.
 - **The rendered corpus cannot exhibit `|lk| ≥ 2`.** An arch weaving across an arch cannot wrap twice; `|lk| ≥ 2` lives only in the `T(2,n)` family, which never goes through a camera.
 - **An even number of tracer errors is uncaught** and can produce a confidently wrong certified integer. Parity catches odd counts; nothing single-view catches pairs. This is the live false-certification path, stated here rather than discovered in a bench → [RESULTS.md §7](https://github.com/teerthsharma/tangle/blob/main/RESULTS.md#7-claims-not-earned).

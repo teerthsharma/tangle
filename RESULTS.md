@@ -141,46 +141,44 @@ the scene rather than against itself.
 
   over/under on accepted crossings
     clean           46/ 46  100.0%
-    blur 1.0 px     48/ 48  100.0%
-    blur 3.0 px      8/  8  100.0%
-    antialiased     31/ 31  100.0%
+    blur 1.0 px     47/ 47  100.0%
+    blur 3.0 px     44/ 44  100.0%
+    antialiased     45/ 45  100.0%
 
   certified / wrong / refused, out of 20 piles per arm
     clean           16     0     4   (80.0% certified)
-    blur 1.0 px     18     0     2   (90.0% certified)
-    blur 3.0 px      3     0    17   (15.0% certified)
-    antialiased      8     0    11   (40.0% certified)
-    rule of three: 0 wrong in 45 certified is an upper bound of 0.067, not a rate of 0
-    unknown crossings among certified verdicts: {0: 45}
+    blur 1.0 px     17     0     3   (85.0% certified)
+    blur 3.0 px     16     0     4   (80.0% certified)
+    antialiased     14     0     6   (70.0% certified)
+    rule of three: 0 wrong in 63 certified is an upper bound of 0.048, not a rate of 0
+    unknown crossings among certified verdicts: {0: 63}
 
   coin flip on the identical diagrams, seed 20260905
     clean          read  16 certified / 0 wrong    coin  19 certified / 11 wrong
-    blur 1.0 px    read  18 certified / 0 wrong    coin  18 certified / 12 wrong
-    blur 3.0 px    read   3 certified / 0 wrong    coin   2 certified / 1 wrong
-    antialiased    read   8 certified / 0 wrong    coin  12 certified / 8 wrong
+    blur 1.0 px    read  17 certified / 0 wrong    coin  18 certified / 12 wrong
+    blur 3.0 px    read  16 certified / 0 wrong    coin  17 certified / 13 wrong
+    antialiased    read  14 certified / 0 wrong    coin  19 certified / 11 wrong
 
   refusal reasons over every arm
-    NOT_TWO_COMPONENTS    15
-    BRANCHED_SKELETON      7
     OPEN_TRACE             4
 ```
 
-That histogram counts the 26 scenes the **tracer** refused, where no diagram was ever
-built. The 34 refusals in the table above it are those 26 plus the 8 scenes that traced
+That histogram counts the 4 scenes the **tracer** refused, where no diagram was ever
+built. The 17 refusals in the table above it are those 4 plus the 13 scenes that traced
 and then refused in the certified layer with `LK_STRADDLES_ZERO`; the `-s` run of
-`tests/test_vision.py` lists those 8 by arm and seed. 45 certified + 34 refused + 1
+`tests/test_vision.py` lists those 13 by arm and seed. 63 certified + 17 refused + 0
 `NOT CERTIFIED` = 80.
 
 The control is the same extracted diagrams with the over/under reader replaced by a coin
-flip: **32 wrong certificates across the four arms**, against 0. The corpus is therefore
+flip: **47 wrong certificates across the four arms**, against 0. The corpus is therefore
 not too easy — a guesser fails loudly on it.
 
 The 100% over/under column clears the specification's kill gate (below 90% means the
 diagram extraction, not the topology, is the bottleneck) on the crossings the tracer
 accepts. It says nothing about the crossings it refused.
 
-Refuse rate per arm, against the 40% kill gate: clean **20%** (pass), blur 1.0 px **10%**
-(pass), antialiased **55%** (fail), blur 3.0 px **85%** (fail). Two of four arms lose.
+Refuse rate per arm, against the 40% kill gate: clean **20%** (pass), blur 1.0 px **15%**
+(pass), blur 3.0 px **20%** (pass), antialiased **30%** (pass). All four arms clear it.
 
 ### Noise: a cliff, not a slope
 
@@ -283,7 +281,7 @@ harness is not what is failing.
 The coin-flip control that section 3 runs — over/under replaced by `random.Random(20260905)`
 — is vacuous here and is printed anyway: it also certifies 0 of 247, because a diagram that
 was never built cannot have its crossings flipped. On the synthetic corpus the same control
-buys 32 wrong certificates, which is the number that says the over/under reader is doing
+buys 47 wrong certificates, which is the number that says the over/under reader is doing
 work; on real input nothing gets far enough for it to say anything.
 
 ### Against numbers published outside this repository
@@ -368,7 +366,7 @@ Every claim in sections 1, 2, 3, 5 and 6 is measured on `tangle.synth` or on clo
 diagrams, and none of it has been confirmed by a real image:
 
 - the coverage table and the 10.3-point gap (section 1);
-- 133 of 133 crossings read the right way round, and the 32 wrong certificates the
+- 182 of 182 crossings read the right way round, and the 47 wrong certificates the
   coin-flip control buys (section 3);
 - every over/under confidence, `TAU`, and the bridge-length constant `BRIDGE_K = 1.165`;
 - the noise, blur and antialiasing envelopes;
@@ -439,22 +437,26 @@ camera bearing. `assets/tangle.gif` is that scene's four frames.
    information criterion. `bench.py` prints it; it is not buried.
 
 2. **On rendered scenes the interval theorem certified nothing the exact half-sum would
-   not have.** All 45 certified verdicts across the four nuisance arms had `k = 0`. The
+   not have.** All 63 certified verdicts across the four nuisance arms had `k = 0`. The
    10.3-point coverage gap in section 1 exists only on the braid corpus, where unknowns are
    injected on purpose. Every "certified over all 2^k resolutions" claim must be read next
    to `k = 0: 276, k = 1: 147, k = 2: 49` — nothing above `k = 2`, because certification
    needs `|S| > k`.
 
-3. **Two of four nuisance arms fail the 40% refuse gate.** blur 3.0 px refuses 85%,
-   antialiased refuses 55%. Antialiasing partly defeats the widest-gap threshold by
-   construction: it manufactures intermediate intensities in the gap the threshold needs.
+3. **All four nuisance arms clear the 40% refuse gate.** clean refuses 20%, blur 1.0 px
+   15%, blur 3.0 px 20%, antialiased 30% — the Otsu-plus-Fisher segmentation gate that
+   replaced the widest-empty-run rule (section 4) is looser on the rendered corpus too, so
+   this stopped being a limit. Not a design target: nothing here optimises for the gate.
 
-4. **Self-crossings are refused, not handled.** `BRANCHED_SKELETON` on 7 of 80 scenes. On
-   real cable piles most crossings are self-crossings, so this is the single largest limit
-   on the imaging layer. Per-cable H-contraction is the upgrade path; it is not built.
+4. **Self-crossings are refused, not handled.** `BRANCHED_SKELETON` refuses 0 of 80
+   rendered scenes on the current gate; it does not exercise this arm the way the real
+   corpus does. On real cable piles most crossings are self-crossings, and `BRANCHED_SKELETON`
+   is 104 of 247 real refusals (section 4) — the single largest limit on the imaging layer.
+   Per-cable H-contraction is the upgrade path; it is not built.
 
-5. **Same-colour cables are out of scope.** `NOT_TWO_COMPONENTS` on 15 of 80 scenes. Colour
-   does segmentation; continuity does over/under. A monochrome pile refuses.
+5. **Same-colour cables are out of scope.** `NOT_TWO_COMPONENTS` refuses 0 of 80 rendered
+   scenes on the current gate and 61 of 247 real images (section 4). Colour does
+   segmentation; continuity does over/under. A monochrome pile refuses.
 
 6. **Noise above sigma = 16/255 is a total loss**, 10/10 traced at 16/255 to 0/10 at
    26/255. Two to three times the old envelope, which sat at 6/255 and 8/255 under
