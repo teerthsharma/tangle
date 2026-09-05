@@ -363,16 +363,29 @@ def render(
         dr.rectangle((0, 0, canvas.width, BANNER_H - 1), fill=ground)
         head, num, action = banner_text(verdict)
         dr.text((22, 22), head, font=font(30), fill=(255, 255, 255), anchor="ls")
+        nfont = font(40)
+        room = canvas.width - 44 - (dr.textlength(num, font=nfont) + 22 if num else 0)
         if action:
-            dr.text((22, 62), action[:96], font=font(15), fill=(238, 238, 238), anchor="ls")
+            afont = font(15)
+            action = action[:96]
+            if dr.textlength(action, font=afont) > room:
+                while action and dr.textlength(action + " ...", font=afont) > room:
+                    action = action[: action.rfind(" ")] if " " in action else action[:-2]
+                action += " ..."
+            dr.text((22, 62), action, font=afont, fill=(238, 238, 238), anchor="ls")
         if num:
-            dr.text((canvas.width - 22, 46), num, font=font(40), fill=(255, 255, 255), anchor="rm")
+            dr.text((canvas.width - 22, 46), num, font=nfont, fill=(255, 255, 255), anchor="rm")
 
     dr.rectangle((0, canvas.height - FOOTER_H, canvas.width, canvas.height), fill=FOOTER_RGB)
+    foot, ffont = footer_text(d, verdict), font(12)
+    # Narrow pages (a 512 px render) cannot hold the whole line; drop trailing fields, never
+    # the digest, rather than letting the text run off the edge.
+    while dr.textlength(foot, font=ffont) > canvas.width - 24 and "  |  " in foot:
+        foot = foot.rsplit("  |  ", 1)[0]
     dr.text(
         (12, canvas.height - FOOTER_H // 2),
-        footer_text(d, verdict),
-        font=font(12),
+        foot,
+        font=ffont,
         fill=(90, 90, 92),
         anchor="lm",
     )
