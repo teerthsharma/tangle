@@ -50,12 +50,6 @@ Nothing here hides that: it is in the hero, in a badge, and measured in [Benchma
 5. If that total is not zero, the two cables are genuinely locked together and no amount of pulling will separate them, so go unplug one.
 6. Where the picture is too blurry to tell who is on top, it works out the answer for *both* possibilities at once, and if those answers disagree about whether the total is zero, it says so instead of picking one.
 
-<p align="center">
-<img src="https://raw.githubusercontent.com/teerthsharma/tangle/main/assets/tangle.gif" width="360" alt="Four frames of one rendered pile: the bare scene, the two cables traced, the crossings numbered, then a REFUSED banner naming crossing 1. Every frame carries the same diagram digest in its footer.">
-</p>
-
-<p align="center"><sub>Steps 1 to 4 on one rendered pile, ending in a refusal rather than a verdict. Each frame carries the diagram digest, so the frames cannot be swapped for prettier ones.</sub></p>
-
 ## When it says no
 
 Refusing is a real answer here, not a crash. It has its own exit code, its own reason, and its own
@@ -408,6 +402,7 @@ Collected once, here.
 <a href="https://github.com/teerthsharma/tangle/blob/main/LICENSE">MIT</a> · python ≥ 3.10 · <a href="https://github.com/teerthsharma/tangle/blob/main/RESULTS.md">RESULTS.md</a> ·
 Invented by <b>Teerth Sharma</b> · teerths57@gmail.com ·
 <a href="https://github.com/teerthsharma/tangle">github.com/teerthsharma/tangle</a><br>
+Hero photograph <a href="https://commons.wikimedia.org/wiki/File:Booster_cables.jpg">Booster_cables.jpg</a> by Qurren, CC BY-SA 3.0, via Wikimedia Commons<br>
 <code>knot-theory · linking-number · topological-invariant · computer-vision · zero-shot ·
 certified · active-perception · explainable-ai</code>
 </sub></p>
