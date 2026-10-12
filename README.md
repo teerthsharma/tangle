@@ -2,6 +2,8 @@
 
 <p align="center"><b>Two cables in one picture: it proves they cannot be pulled apart, or it refuses and names the crossing to re-shoot. It never guesses.</b></p>
 
+<p align="center"><a href="https://teerth.blog/tangle"><b>Read the essay at teerth.blog/tangle</b></a> &nbsp;·&nbsp; the maths, the proofs and live figures</p>
+
 <p align="center"><sub>Invented by <b>Teerth Sharma</b> · <a href="mailto:teerths57@gmail.com">teerths57@gmail.com</a> · <a href="https://github.com/teerthsharma/tangle">github.com/teerthsharma/tangle</a> · <a href="https://github.com/teerthsharma/tangle/blob/main/RESULTS.md">RESULTS.md</a></sub></p>
 
 <p align="center">
